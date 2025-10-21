@@ -1,15 +1,20 @@
-require('dotenv').config();
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
+import 'dotenv/config';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ES6'da __dirname alternatifi
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Routes
-const videoRoutes = require("./routes/videos");
-const uploadRoutes = require("./routes/upload");
-const categoryRoutes = require("./routes/categories");
-const tagRoutes = require("./routes/tags");
-const errorHandler = require("./middleware/errorHandler");
+import videoRoutes from './routes/videos.js';
+import uploadRoutes from './routes/upload.js';
+import categoryRoutes from './routes/categories.js';
+import tagRoutes from './routes/tags.js';
+import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
 

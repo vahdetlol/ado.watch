@@ -1,6 +1,6 @@
-const youtubedl = require('youtube-dl-exec');
-const path = require('path');
-const fs = require('fs');
+import youtubedl from '@openanime/youtube-dl-exec';
+import path from 'path';
+import fs from 'fs';
 
 /**
  * YouTube'dan video indir
@@ -9,7 +9,7 @@ const fs = require('fs');
  * @param {boolean} isPlaylist - Playlist mi indiriliyor
  * @returns {Promise<Object>} - İndirilen video bilgileri
  */
-async function downloadFromYouTube(url, outputDir, isPlaylist = false) {
+const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
   try {
     // Klasör yoksa oluştur
     if (!fs.existsSync(outputDir)) {
@@ -58,14 +58,14 @@ async function downloadFromYouTube(url, outputDir, isPlaylist = false) {
     console.error('YouTube download error:', error);
     throw new Error(`YouTube'dan indirme başarısız: ${error.message}`);
   }
-}
+};
 
 /**
  * YouTube video bilgilerini al (indirmeden)
  * @param {string} url - YouTube video URL'i
  * @returns {Promise<Object>} - Video bilgileri
  */
-async function getYouTubeInfo(url) {
+const getYouTubeInfo = async (url) => {
   try {
     const info = await youtubedl(url, {
       dumpSingleJson: true,
@@ -85,14 +85,14 @@ async function getYouTubeInfo(url) {
   } catch (error) {
     throw new Error(`YouTube bilgileri alınamadı: ${error.message}`);
   }
-}
+};
 
 /**
  * YouTube Playlist bilgilerini al
  * @param {string} url - YouTube playlist URL'i
  * @returns {Promise<Object>} - Playlist bilgileri
  */
-async function getPlaylistInfo(url) {
+const getPlaylistInfo = async (url) => {
   try {
     const info = await youtubedl(url, {
       dumpSingleJson: true,
@@ -121,7 +121,7 @@ async function getPlaylistInfo(url) {
   } catch (error) {
     throw new Error(`Playlist bilgileri alınamadı: ${error.message}`);
   }
-}
+};
 
 /**
  * Playlist'teki tüm videoları indir
@@ -129,7 +129,7 @@ async function getPlaylistInfo(url) {
  * @param {string} outputDir - Videonun kaydedileceği klasör
  * @returns {Promise<Array>} - İndirilen videolar
  */
-async function downloadPlaylist(playlistUrl, outputDir) {
+const downloadPlaylist = async (playlistUrl, outputDir) => {
   try {
     // Klasör yoksa oluştur
     if (!fs.existsSync(outputDir)) {
@@ -170,29 +170,29 @@ async function downloadPlaylist(playlistUrl, outputDir) {
   } catch (error) {
     throw new Error(`Playlist indirilemedi: ${error.message}`);
   }
-}
+};
 
 /**
  * URL'nin YouTube linki olup olmadığını kontrol et
  * @param {string} url - Kontrol edilecek URL
  * @returns {boolean}
  */
-function isYouTubeUrl(url) {
+const isYouTubeUrl = (url) => {
   const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
   return youtubeRegex.test(url);
-}
+};
 
 /**
  * URL'nin YouTube Playlist linki olup olmadığını kontrol et
  * @param {string} url - Kontrol edilecek URL
  * @returns {boolean}
  */
-function isPlaylistUrl(url) {
+const isPlaylistUrl = (url) => {
   const playlistRegex = /[?&]list=([a-zA-Z0-9_-]+)/;
   return playlistRegex.test(url);
-}
+};
 
-module.exports = {
+export {
   downloadFromYouTube,
   getYouTubeInfo,
   getPlaylistInfo,

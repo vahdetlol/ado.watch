@@ -1,6 +1,6 @@
-const express = require('express');
-const fs = require('fs');
-const Video = require('../models/Video');
+import express from 'express';
+import fs from 'fs';
+import Video from '../models/Video.js';
 
 const router = express.Router();
 
@@ -67,4 +67,4 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,14 +1,19 @@
-require('dotenv').config();
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
+import 'dotenv/config';
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 // Routes
-const streamRoutes = require("./routes/stream");
-const youtubeRoutes = require("./routes/youtube");
-const uploadRoutes = require("./routes/upload");
-const errorHandler = require("./middleware/errorHandler");
+import streamRoutes from "./routes/stream.js";
+import youtubeRoutes from "./routes/youtube.js";
+import uploadRoutes from "./routes/upload.js";
+import errorHandler from "./middleware/errorHandler.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 

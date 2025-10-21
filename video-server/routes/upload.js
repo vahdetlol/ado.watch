@@ -1,9 +1,14 @@
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const Video = require('../models/Video');
-const { extractThumbnail, getDuration } = require('../utils/ffmpeg');
+import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import Video from '../models/Video.js';
+import { extractThumbnail, getDuration } from '../utils/ffmpeg.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const router = express.Router();
 
@@ -226,4 +231,4 @@ router.post('/multiple', upload.array('videos', 10), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

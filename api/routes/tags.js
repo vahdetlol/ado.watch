@@ -1,5 +1,5 @@
-const express = require('express');
-const Tag = require('../models/tag');
+import express from 'express';
+import Tag from '../models/tag.js';
 
 const router = express.Router();
 
@@ -73,4 +73,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

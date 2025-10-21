@@ -1,5 +1,11 @@
-const express = require('express');
-const Video = require('../models/Video');
+import express from 'express';
+import Video from '../models/Video.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -65,9 +71,6 @@ router.put('/:id', async (req, res) => {
 // Video sil (fiziksel dosya + DB)
 router.delete('/:id', async (req, res) => {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    
     const video = await Video.findById(req.params.id);
     if (!video) return res.status(404).json({ message: 'Video not found' });
 
@@ -106,4 +109,4 @@ router.post('/:id/view', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

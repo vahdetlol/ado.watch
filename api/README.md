@@ -1,26 +1,4 @@
-# Video Platform API
-
-Video izleme platformu için ana API servisi.
-
-## Özellikler
-
-- ✅ Video yükleme (multer + ffmpeg)
-- ✅ Thumbnail otomatik oluşturma
-- ✅ Kategori ve tag yönetimi
-- ✅ Arama ve filtreleme
-- ✅ İzlenme sayacı
-- ✅ Pagination
-- ✅ CORS desteği
-
-## Not
-
-Video indirme ve streaming işlemleri **video-server** servisine taşınmıştır.
-
-## Kurulum
-
-```bash
-npm install
-```
+# API Documentation
 
 ## Ortam Değişkenleri
 
@@ -30,16 +8,6 @@ npm install
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/video_api
 NODE_ENV=development
-```
-
-## Çalıştırma
-
-```bash
-# Production
-npm start
-
-# Development (nodemon)
-npm run dev
 ```
 
 ## API Endpoints
@@ -78,6 +46,11 @@ npm run dev
 
 ## Gereksinimler
 
-- Node.js >= 14
+- Node.js >= 14 (ES6 modül desteği için >= 14.x)
 - MongoDB
-- FFmpeg (sistem PATH'inde olmalı)
+
+## Teknik Detaylar
+
+- **Modül Sistemi**: ES6 (import/export)
+- **JavaScript Version**: ES2015+
+- **FFmpeg**: @ffmpeg-installer/ffmpeg (dahili)

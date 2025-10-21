@@ -1,17 +1,22 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const https = require('https');
-const http = require('http');
-const Video = require('../models/Video');
-const { 
+import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import https from 'https';
+import http from 'http';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import Video from '../models/Video.js';
+import { 
   downloadFromYouTube, 
   getYouTubeInfo, 
   getPlaylistInfo,
   downloadPlaylist,
   isYouTubeUrl,
   isPlaylistUrl 
-} = require('../utils/youtube');
+} from '../utils/youtube.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const router = express.Router();
 
@@ -24,7 +29,7 @@ if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
 /**
  * Thumbnail'i URL'den indir
  */
-async function downloadThumbnail(thumbnailUrl, outputPath) {
+const downloadThumbnail = (thumbnailUrl, outputPath) => {
   return new Promise((resolve, reject) => {
     const protocol = thumbnailUrl.startsWith('https') ? https : http;
     
@@ -50,7 +55,7 @@ async function downloadThumbnail(thumbnailUrl, outputPath) {
       reject(err);
     });
   });
-}
+};
 
 /**
  * YouTube'dan video indir ve kaydet
@@ -292,4 +297,4 @@ router.post('/playlist/download', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
