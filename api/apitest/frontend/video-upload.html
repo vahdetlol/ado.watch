@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Yükle - ado.watch</title>
+    <link rel="stylesheet" href="css/video-upload.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📤 Video Yükle</h1>
+            <p>Bilgisayarınızdan video yükleyin</p>
+        </div>
+
+        <div class="content">
+            <!-- Alert Messages -->
+            <div id="alert" class="alert"></div>
+
+            <!-- File Upload Area -->
+            <div class="form-group">
+                <label>Video Dosyası Seçin</label>
+                <div class="file-upload-area" id="file-upload-area">
+                    <div class="file-upload-icon">🎬</div>
+                    <div class="file-upload-text">Video dosyasını sürükleyin veya tıklayın</div>
+                    <div class="input-hint">MP4, AVI, MOV, WebM desteklenir (max 500MB)</div>
+                </div>
+                <input type="file" id="file-input" accept="video/*">
+                
+                <div class="file-info" id="file-info">
+                    <strong>Seçilen Dosya:</strong>
+                    <div id="file-name"></div>
+                    <div id="file-size"></div>
+                </div>
+            </div>
+
+            <!-- Form Fields -->
+            <div class="form-group">
+                <label for="title">Video Başlığı</label>
+                <input 
+                    type="text" 
+                    id="title" 
+                    placeholder="Video başlığı girin"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="description">Açıklama</label>
+                <textarea 
+                    id="description" 
+                    placeholder="Video açıklaması (opsiyonel)"
+                    rows="4"
+                ></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="categories">Kategoriler</label>
+                <div class="tags-input-wrapper" id="categories-wrapper">
+                    <input 
+                        type="text" 
+                        class="tag-input" 
+                        id="categories-input" 
+                        placeholder="Kategori yazıp Enter'a basın..."
+                    >
+                </div>
+                <div class="input-hint">Kategorileri yazıp Enter tuşuna basın (örn: Müzik, Eğlence)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Etiketler (Tags)</label>
+                <div class="tags-input-wrapper" id="tags-wrapper">
+                    <input 
+                        type="text" 
+                        class="tag-input" 
+                        id="tags-input" 
+                        placeholder="Etiket yazıp Enter'a basın..."
+                    >
+                </div>
+                <div class="input-hint">Etiketleri yazıp Enter tuşuna basın (örn: cover, 2024, viral)</div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress-fill" id="progress-fill">0%</div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Video işleniyor...</p>
+            </div>
+
+            <button class="btn btn-primary" id="upload-btn" disabled>
+                📤 Yükle
+            </button>
+        </div>
+    </div>
+
+    <script src="js/video-upload.js"></script>
+</body>
+</html>
