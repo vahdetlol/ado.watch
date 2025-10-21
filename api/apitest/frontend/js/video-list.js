@@ -1,4 +1,5 @@
 const API_URL = 'http://localhost:5000/api';
+const STREAM_API_URL = 'http://localhost:5001/api';
 let currentPage = 1;
 let totalPages = 1;
 let searchQuery = '';
@@ -72,7 +73,7 @@ function createVideoCard(video) {
     const views = video.views || 0;
 
     card.innerHTML = `
-        <img src="${API_URL.replace('/api', '')}${video.thumbnail || '/uploads/thumbnails/default.jpg'}" 
+        <img src="${STREAM_API_URL.replace('/api', '')}${video.thumbnail || '/uploads/thumbnails/default.jpg'}" 
              class="video-thumbnail" 
              alt="${video.title}"
              onerror="this.src='https://via.placeholder.com/300x180?text=No+Thumbnail'">
@@ -139,7 +140,7 @@ function playVideo(videoId, title) {
     modalTitle.textContent = title;
     
     // Stream URL oluştur
-    const streamUrl = `${API_URL}/stream/${videoId}`;
+    const streamUrl = `${STREAM_API_URL}/stream/${videoId}`;
     console.log('🎬 Video oynatılıyor:', streamUrl);
     
     player.src = streamUrl;
@@ -153,7 +154,7 @@ function playVideo(videoId, title) {
     });
 
     // İzlenme sayısını artır
-    fetch(`${API_URL}/videos/${videoId}/view`, { method: 'POST' })
+    fetch(`${STREAM_API_URL}/videos/${videoId}/view`, { method: 'POST' })
         .catch(err => console.warn('View count update failed:', err));
 }
 
@@ -176,7 +177,7 @@ async function deleteVideo(videoId) {
     }
 
     try {
-        const response = await fetch(`${API_URL}/videos/${videoId}`, {
+        const response = await fetch(`${STREAM_API_URL}/videos/${videoId}`, {
             method: 'DELETE'
         });
 
