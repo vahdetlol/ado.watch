@@ -4,7 +4,7 @@ import {
   isPlaylistUrl
 } from '../../../utils/youtube.js';
 
-// POST /api/youtube/playlist/info - YouTube Playlist bilgilerini al
+// POST /api/youtube/playlist/info - Get YouTube Playlist information
 export default class extends Route {
   async handle(req, reply) {
     try {
@@ -28,7 +28,7 @@ export default class extends Route {
     } catch (error) {
       console.error('Playlist info error:', error);
       return reply.status(500).send({ 
-        error: 'Playlist bilgileri alınamadı', 
+        error: 'Failed to fetch playlist information', 
         message: error.message 
       });
     }

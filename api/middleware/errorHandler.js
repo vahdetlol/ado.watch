@@ -4,7 +4,7 @@ function errorHandler(ctx, next) {
   } catch (err) {
     console.error("\n[ERROR]:", err);
 
-    // Multer hataları
+  // Multer errors
     if (err.name === 'MulterError') {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return ctx.status(400).json({
@@ -18,7 +18,7 @@ function errorHandler(ctx, next) {
       });
     }
 
-    // MongoDB validation hataları
+  // MongoDB validation errors
     if (err.name === 'ValidationError') {
       return ctx.status(400).json({
         success: false,
@@ -27,7 +27,7 @@ function errorHandler(ctx, next) {
       });
     }
 
-    // MongoDB duplicate key hataları
+  // MongoDB duplicate key errors
     if (err.code === 11000) {
       return ctx.status(400).json({
         success: false,
@@ -35,7 +35,7 @@ function errorHandler(ctx, next) {
       });
     }
 
-    // Genel sunucu hatası
+  // General server error
     ctx.status(err.status || 500).json({
       success: false,
       message: err.message || "Server error"

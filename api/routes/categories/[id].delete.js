@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Category from '../../models/category.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// DELETE /api/categories/:id - Kategori sil (Sadece Admin)
+// DELETE /api/categories/:id - Delete category (Admin only)
 export default class extends Route {
   middleware = [authenticate, authorize('admin')];
 

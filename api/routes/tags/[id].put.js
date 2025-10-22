@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Tag from '../../models/tag.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// PUT /api/tags/:id - Tag güncelle (Admin veya Moderator)
+// PUT /api/tags/:id - Update tag (Admin or Moderator)
 export default class extends Route {
   middleware = [authenticate, authorize('admin', 'moderator')];
 

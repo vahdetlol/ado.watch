@@ -3,14 +3,14 @@ import { path as ffmpegPath } from '@ffmpeg-installer/ffmpeg';
 import path from 'path';
 import fs from 'fs';
 
-// FFmpeg binary yolunu ayarla
+// Set FFmpeg binary path
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 /**
- * Videodan thumbnail oluştur (ilk kare)
- * @param {string} inputPath - Video dosya yolu
- * @param {string} outputPath - Thumbnail çıkış yolu
- * @returns {Promise<string>} - Thumbnail dosya yolu
+ * Create a thumbnail from a video (first frame)
+ * @param {string} inputPath - Video file path
+ * @param {string} outputPath - Thumbnail output path
+ * @returns {Promise<string>} - Thumbnail file path
  */
 export const extractThumbnail = (inputPath, outputPath) => {
   return new Promise((resolve, reject) => {
@@ -27,9 +27,9 @@ export const extractThumbnail = (inputPath, outputPath) => {
 };
 
 /**
- * Video süresini al
- * @param {string} inputPath - Video dosya yolu
- * @returns {Promise<number>} - Saniye cinsinden süre
+ * Get video duration
+ * @param {string} inputPath - Video file path
+ * @returns {Promise<number>} - Duration in seconds
  */
 export const getDuration = (inputPath) => {
   return new Promise((resolve, reject) => {
@@ -41,8 +41,8 @@ export const getDuration = (inputPath) => {
 };
 
 /**
- * Video bilgilerini al (genişlik, yükseklik, codec, vb.)
- * @param {string} inputPath - Video dosya yolu
+ * Get video information (width, height, codec, etc.)
+ * @param {string} inputPath - Video file path
  * @returns {Promise<Object>} - Video metadata
  */
 export const getVideoInfo = (inputPath) => {

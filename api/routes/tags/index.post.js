@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Tag from '../../models/tag.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// POST /api/tags - Yeni tag oluştur (Admin veya Moderator)
+// POST /api/tags - Create a new tag (Admin or Moderator)
 export default class extends Route {
   middleware = [authenticate, authorize('admin', 'moderator')];
 

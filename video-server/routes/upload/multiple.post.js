@@ -45,7 +45,7 @@ const upload = multer({
   }
 });
 
-// POST /api/upload/multiple - Çoklu video yükleme (Giriş yapmış kullanıcılar)
+// POST /api/upload/multiple - Multiple video upload (Authenticated users)
 export default class extends Route {
   async handle(req, reply) {
     // Check authentication first

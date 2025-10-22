@@ -1,7 +1,7 @@
 import { Route } from 'owebjs';
 import Video from '../../../models/Video.js';
 
-// POST /api/videos/:id/view - İzlenme sayısını artır
+// POST /api/videos/:id/view - Increment view count
 export default class extends Route {
   async handle(req, res) {
     try {

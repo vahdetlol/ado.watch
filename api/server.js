@@ -5,29 +5,32 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fastifyStatic from '@fastify/static';
 import cors from '@fastify/cors';
+import { registerGlobalRateLimit } from './middleware/rateLimiter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// MongoDB Bağlantısı
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB'ye bağlanıldı"))
-  .catch((err) => console.error("❌ MongoDB bağlantı hatası:", err));
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Create and setup the app
 const app = await new Oweb().setup();
 
-// CORS desteği ekle
+// Enable CORS
 await app.register(cors, {
-  origin: '*', // Tüm originlere izin ver (production'da daha spesifik olmalı)
+  origin: '*', // Allow all origins (be more specific in production)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 });
 
-// Static files için Fastify plugin kullan
+registerGlobalRateLimit(app);
+
+// Use Fastify plugin for serving static files
 await app.register(fastifyStatic, {
   root: path.join(__dirname, 'uploads'),
   prefix: '/uploads/',
@@ -45,7 +48,7 @@ await app.loadRoutes({
 app.setInternalErrorHandler((req, res, error) => {
   console.error("\n[ERROR]:", error);
 
-  // Multer hataları
+  // Multer errors
   if (error.name === 'MulterError') {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).send({
@@ -59,7 +62,7 @@ app.setInternalErrorHandler((req, res, error) => {
     });
   }
 
-  // MongoDB validation hataları
+  // MongoDB validation errors
   if (error.name === 'ValidationError') {
     return res.status(400).send({
       success: false,
@@ -68,7 +71,7 @@ app.setInternalErrorHandler((req, res, error) => {
     });
   }
 
-  // MongoDB duplicate key hataları
+  // MongoDB duplicate key errors
   if (error.code === 11000) {
     return res.status(400).send({
       success: false,
@@ -76,7 +79,7 @@ app.setInternalErrorHandler((req, res, error) => {
     });
   }
 
-  // Genel sunucu hatası
+  // General server error
   res.status(error.status || 500).send({
     success: false,
     message: error.message || "Server error"

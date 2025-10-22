@@ -12,7 +12,7 @@ const question = (query) => new Promise((resolve) => rl.question(query, resolve)
 
 async function createAdmin() {
   try {
-    // MongoDB'ye bağlan
+  // Connect to MongoDB
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -26,7 +26,7 @@ async function createAdmin() {
     const password = await question('Password: ');
     const level = await question('Level (admin/moderator/user): ') || 'user';
 
-    // Kullanıcı zaten var mı kontrol et
+  // Check if the user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }]
     });
@@ -36,7 +36,7 @@ async function createAdmin() {
       process.exit(1);
     }
 
-    // Yeni kullanıcı oluştur
+  // Create a new user
     const user = new User({
       username,
       email,

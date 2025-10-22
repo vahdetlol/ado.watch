@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Tag from '../../models/tag.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// DELETE /api/tags/:id - Tag sil (Sadece Admin)
+// DELETE /api/tags/:id - Delete tag (Admin only)
 export default class extends Route {
   middleware = [authenticate, authorize('admin')];
 

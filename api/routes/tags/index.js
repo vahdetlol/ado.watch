@@ -1,7 +1,7 @@
 import { Route } from 'owebjs';
 import Tag from '../../models/tag.js';
 
-// GET /api/tags - Tüm tag'leri listele
+// GET /api/tags - List all tags
 export default class extends Route {
   async handle(req, res) {
     try {

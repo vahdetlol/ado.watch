@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Video from '../../models/Video.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// PUT /api/videos/:id - Video güncelle (Admin veya Moderator)
+// PUT /api/videos/:id - Update video (Admin or Moderator)
 export default class extends Route {
   async handle(req, reply) {
     // Manual middleware execution

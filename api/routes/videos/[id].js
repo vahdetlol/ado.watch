@@ -1,7 +1,7 @@
 import { Route } from 'owebjs';
 import Video from '../../models/Video.js';
 
-// GET /api/videos/:id - Tek video metadata
+// GET /api/videos/:id - Get single video metadata
 export default class extends Route {
   async handle(req, res) {
     try {

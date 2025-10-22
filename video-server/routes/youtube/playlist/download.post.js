@@ -15,7 +15,7 @@ import { authenticate, authorize } from '../../../middleware/auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Ana proje dizinindeki uploads klasörü
+// Uploads folder in the main project directory
 const videoDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'videos');
 const thumbDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'thumbnails');
 
@@ -50,7 +50,7 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
   });
 };
 
-// POST /api/youtube/playlist/download - YouTube Playlist'ten tüm videoları indir (Admin veya Moderator)
+// POST /api/youtube/playlist/download - Download all videos from a YouTube Playlist (Admin or Moderator)
 export default class extends Route {
   async handle(req, reply) {
     // Manual middleware execution
@@ -98,7 +98,7 @@ export default class extends Route {
               thumbnailPath = `/uploads/thumbnails/${thumbFilename}`;
             }
           } catch (thumbError) {
-            console.warn('⚠️ Thumbnail indirilemedi:', thumbError.message);
+            console.warn('⚠️ Thumbnail could not be downloaded:', thumbError.message);
           }
 
           const video = new Video({
@@ -120,9 +120,9 @@ export default class extends Route {
             playlistIndex: videoData.playlistIndex
           });
 
-          console.log(`✅ DB'ye kaydedildi: ${video.title}`);
+          console.log(`✅ Saved to DB: ${video.title}`);
         } catch (dbError) {
-          console.error(`❌ DB kayıt hatası (${videoData.title}):`, dbError.message);
+          console.error(`❌ DB save error (${videoData.title}):`, dbError.message);
           failedVideos.push({
             title: videoData.title,
             error: dbError.message
@@ -132,7 +132,7 @@ export default class extends Route {
 
       return reply.status(201).send({
         success: true,
-        message: `${savedVideos.length} video başarıyla kaydedildi`,
+        message: `${savedVideos.length} videos saved successfully`,
         savedVideos,
         failedVideos,
         total: downloadedVideos.length,

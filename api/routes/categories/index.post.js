@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Category from '../../models/category.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// POST /api/categories - Yeni kategori oluştur (Sadece Admin)
+// POST /api/categories - Create a new category (Admin only)
 export default class extends Route {
   middleware = [authenticate, authorize('admin')];
 

@@ -1,12 +1,11 @@
 import { Route } from 'owebjs';
 import jwt from 'jsonwebtoken';
 import User from '../../models/User.js';
+import { bruteForceProtection, recordLoginAttempt } from '../../middleware/bruteForce.js';
 
-/**
- * POST /auth/login
- * Login user
- */
 export default class extends Route {
+  middleware = [bruteForceProtection];
+
   async handle(req, res) {
     try {
     const { username, email, password } = req.body;
@@ -19,7 +18,6 @@ export default class extends Route {
       });
     }
 
-    // Find user
     const user = await User.findOne({
       $or: [
         { username: username || '' },
@@ -28,13 +26,14 @@ export default class extends Route {
     });
 
     if (!user) {
+      await recordLoginAttempt(req, false);
+      
       return res.status(401).send({
         success: false,
         message: 'Invalid name or password'
       });
     }
 
-    // Check if account is active
     if (!user.isActive) {
       return res.status(403).send({
         success: false,
@@ -42,21 +41,22 @@ export default class extends Route {
       });
     }
 
-    // Verify password
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
+      await recordLoginAttempt(req, false);
+      
       return res.status(401).send({
         success: false,
-        message: 'Invalid name or password'
+        message: 'Invalid credentials'
       });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Generate token
+    await recordLoginAttempt(req, true);
+
     const token = jwt.sign(
       { userId: user._id, level: user.level },
       process.env.JWT_SECRET,

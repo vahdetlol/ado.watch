@@ -1,7 +1,7 @@
 import { Snowflake } from 'nodejs-snowflake';
 
 // Snowflake ID generator instance
-// Epoch: 1 Ocak 2020 (epoch değerini proje başlangıç tarihine göre ayarlayabilirsiniz)
+// Epoch: January 1, 2020 (you can adjust the epoch to your project start date)
 const instanceId = parseInt(process.env.INSTANCE_ID || '1', 10);
 
 if (instanceId < 1 || instanceId > 1023) {
@@ -9,12 +9,12 @@ if (instanceId < 1 || instanceId > 1023) {
 }
 
 const snowflake = new Snowflake({
-  custom_epoch: 1577836800000, // 1 Ocak 2020 00:00:00 UTC
-  instance_id: instanceId // Environment variable'dan okunuyor
+  custom_epoch: 1577836800000, // January 1, 2020 00:00:00 UTC
+  instance_id: instanceId // Read from environment variable
 });
 
 /**
- * Yeni bir Snowflake ID oluşturur
+ * Generate a new Snowflake ID
  * @returns {string} Snowflake ID
  */
 export const generateId = () => {
@@ -22,9 +22,9 @@ export const generateId = () => {
 };
 
 /**
- * Snowflake ID'den zaman damgasını çıkarır
+ * Extract timestamp from a Snowflake ID
  * @param {string} id - Snowflake ID
- * @returns {Date} Oluşturma zamanı
+ * @returns {Date} Creation time
  */
 export const getTimestampFromId = (id) => {
   const timestamp = snowflake.timestampFromID(id);

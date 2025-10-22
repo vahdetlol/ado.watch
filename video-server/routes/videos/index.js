@@ -1,7 +1,7 @@
 import { Route } from 'owebjs';
 import Video from '../../models/Video.js';
 
-// GET /api/videos - Tüm videoları listele (pagination + filtering)
+// GET /api/videos - List all videos (pagination + filtering)
 export default class extends Route {
   async handle(req, reply) {
     try {

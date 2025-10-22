@@ -1,7 +1,7 @@
 import { Route } from 'owebjs';
 import Category from '../../models/category.js';
 
-// GET /api/categories - Tüm kategorileri listele
+// GET /api/categories - List all categories
 export default class extends Route {
   async handle(req, res) {
     try {

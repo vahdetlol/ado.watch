@@ -15,7 +15,7 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Ana proje dizinindeki uploads klasörü
+// Uploads folder in the main project directory
 const videoDir = path.join(__dirname, '..', '..', '..', 'uploads', 'videos');
 const thumbDir = path.join(__dirname, '..', '..', '..', 'uploads', 'thumbnails');
 
@@ -50,7 +50,7 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
   });
 };
 
-// POST /api/youtube/download - YouTube'dan video indir (Admin veya Moderator)
+// POST /api/youtube/download - Download video from YouTube (Admin or Moderator)
 export default class extends Route {
   async handle(req, reply) {
     // Manual middleware execution

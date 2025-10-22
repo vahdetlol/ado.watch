@@ -11,7 +11,7 @@ import { authenticate } from '../../middleware/auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Ana proje dizinindeki uploads klasörü
+// Uploads folder in the main project directory
 const videoDir = path.join(__dirname, '..', '..', '..', 'uploads', 'videos');
 const thumbDir = path.join(__dirname, '..', '..', '..', 'uploads', 'thumbnails');
 
@@ -46,7 +46,7 @@ const upload = multer({
   }
 });
 
-// POST /api/upload - Video yükle (Giriş yapmış kullanıcılar)
+// POST /api/upload - Upload video (Authenticated users)
 export default class extends Route {
   async handle(req, reply) {
     // Check authentication first

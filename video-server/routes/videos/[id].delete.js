@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// DELETE /api/videos/:id - Video sil (Admin veya Moderator)
+// DELETE /api/videos/:id - Delete video (Admin or Moderator)
 export default class extends Route {
   async handle(req, reply) {
     // Manual middleware execution
@@ -27,12 +27,12 @@ export default class extends Route {
       });
     }
 
-    // Fiziksel dosyaları sil
+  // Delete physical files
     if (fs.existsSync(video.filename)) {
       fs.unlinkSync(video.filename);
     }
     if (video.thumbnail) {
-      // Ana proje dizinindeki uploads klasörü
+  // Uploads folder in the main project directory
       const thumbPath = path.join(__dirname, '..', '..', '..', video.thumbnail);
       if (fs.existsSync(thumbPath)) {
         fs.unlinkSync(thumbPath);

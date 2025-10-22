@@ -11,14 +11,14 @@ import fs from 'fs';
  */
 const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
   try {
-    // Klasör yoksa oluştur
+    // Create folder if it doesn't exist
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
     console.log(`Output directory: ${outputDir}`);
 
-    // Video bilgilerini al
+  // Get video information
     const info = await youtubedl(url, {
       dumpSingleJson: true,
       noWarnings: true,
@@ -30,15 +30,15 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
     console.log(`Video title: ${info.title}`);
     console.log(`Duration: ${info.duration}s`);
 
-    // Önce mevcut dosya sayısını al
+  // Get current number of files first
     const existingFiles = fs.readdirSync(outputDir);
     const existingCount = existingFiles.length;
 
-    // Benzersiz dosya adı oluştur
+  // Create a unique file name
     const uniqueId = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const outputTemplate = path.join(outputDir, `${uniqueId}.%(ext)s`);
 
-    // Videoyu indir
+  // Download the video
     console.log(`Downloading...`);
     await youtubedl(url, {
       output: outputTemplate,
@@ -50,14 +50,14 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
 
     console.log(`🔍 Searching for downloaded file...`);
     
-    // İndirdikten sonra yeni dosyaları bul
+  // After downloading, find new files
     const currentFiles = fs.readdirSync(outputDir);
     const newFiles = currentFiles.filter(f => !existingFiles.includes(f));
     
     console.log(`New files found:`, newFiles);
 
     if (newFiles.length === 0) {
-      // Eğer yeni dosya bulunamazsa, uniqueId ile başlayan dosyaları ara
+      // If no new file is found, search for files starting with uniqueId
       const matchingFiles = currentFiles.filter(f => f.startsWith(uniqueId.split('-')[0]));
       if (matchingFiles.length > 0) {
         newFiles.push(matchingFiles[0]);
@@ -68,11 +68,11 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       throw new Error('No downloaded file found');
     }
 
-    // İlk yeni dosyayı kullan
+  // Use the first new file
     const downloadedFile = newFiles[0];
     const outputPath = path.join(outputDir, downloadedFile);
 
-    // Dosya boyutunu al
+  // Get file size
     const stats = fs.statSync(outputPath);
     console.log(`Downloaded: ${downloadedFile}`);
     console.log(`File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
@@ -96,9 +96,9 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
 };
 
 /**
- * YouTube video bilgilerini al (indirmeden)
- * @param {string} url - YouTube video URL'i
- * @returns {Promise<Object>} - Video bilgileri
+ * Get YouTube video information (without downloading)
+ * @param {string} url - YouTube video URL
+ * @returns {Promise<Object>} - Video information
  */
 const getYouTubeInfo = async (url) => {
   try {
@@ -106,7 +106,7 @@ const getYouTubeInfo = async (url) => {
       dumpSingleJson: true,
       noWarnings: true,
       noCallHome: true,
-      noPlaylist: true, // Sadece tek video bilgisi
+  noPlaylist: true, // Only single video info
     });
 
     return {
@@ -123,9 +123,9 @@ const getYouTubeInfo = async (url) => {
 };
 
 /**
- * YouTube Playlist bilgilerini al
- * @param {string} url - YouTube playlist URL'i
- * @returns {Promise<Object>} - Playlist bilgileri
+ * Get YouTube Playlist information
+ * @param {string} url - YouTube playlist URL
+ * @returns {Promise<Object>} - Playlist information
  */
 const getPlaylistInfo = async (url) => {
   try {
@@ -136,7 +136,7 @@ const getPlaylistInfo = async (url) => {
       noCallHome: true,
     });
 
-    // Playlist mi kontrol et
+    // Check if it's a playlist
     if (!info.entries || !Array.isArray(info.entries)) {
       throw new Error('This is not a playlist');
     }
@@ -159,25 +159,25 @@ const getPlaylistInfo = async (url) => {
 };
 
 /**
- * Playlist'teki tüm videoları indir
- * @param {string} playlistUrl - YouTube playlist URL'i
- * @param {string} outputDir - Videonun kaydedileceği klasör
- * @returns {Promise<Array>} - İndirilen videolar
+ * Download all videos in a playlist
+ * @param {string} playlistUrl - YouTube playlist URL
+ * @param {string} outputDir - Directory where the video will be saved
+ * @returns {Promise<Array>} - Downloaded videos
  */
 const downloadPlaylist = async (playlistUrl, outputDir) => {
   try {
-    // Klasör yoksa oluştur
+    // Create folder if it doesn't exist
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Playlist bilgilerini al
+  // Get playlist information
     const playlistInfo = await getPlaylistInfo(playlistUrl);
     console.log(`Playlist: ${playlistInfo.title} (${playlistInfo.videoCount} video)`);
 
     const downloadedVideos = [];
 
-    // Her videoyu tek tek indir
+    // Download each video one by one
     for (let i = 0; i < playlistInfo.videos.length; i++) {
       const videoInfo = playlistInfo.videos[i];
       console.log(`\n[${i + 1}/${playlistInfo.videoCount}] Downloading: ${videoInfo.title}`);
@@ -192,7 +192,7 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
         console.log(`Completed: ${videoInfo.title}`);
       } catch (error) {
         console.error(`Error (${videoInfo.title}):`, error.message);
-        // Bir video hata verse bile devam et
+        // Continue even if one video fails
         downloadedVideos.push({
           error: true,
           title: videoInfo.title,
@@ -208,8 +208,8 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
 };
 
 /**
- * URL'nin YouTube linki olup olmadığını kontrol et
- * @param {string} url - Kontrol edilecek URL
+ * Check if the URL is a YouTube link
+ * @param {string} url - URL to check
  * @returns {boolean}
  */
 const isYouTubeUrl = (url) => {
@@ -218,8 +218,8 @@ const isYouTubeUrl = (url) => {
 };
 
 /**
- * URL'nin YouTube Playlist linki olup olmadığını kontrol et
- * @param {string} url - Kontrol edilecek URL
+ * Check if the URL is a YouTube Playlist link
+ * @param {string} url - URL to check
  * @returns {boolean}
  */
 const isPlaylistUrl = (url) => {

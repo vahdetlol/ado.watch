@@ -2,7 +2,7 @@ import { Route } from 'owebjs';
 import Category from '../../models/category.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
-// PUT /api/categories/:id - Kategori güncelle (Admin veya Moderator)
+// PUT /api/categories/:id - Update category (Admin or Moderator)
 export default class extends Route {
   middleware = [authenticate, authorize('admin', 'moderator')];
 
