@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
+import { generateId } from '../utils/snowflake.js';
 
 const videoSchema = new mongoose.Schema(
   {
+    _id: { type: String, default: generateId },
     title: { type: String, required: true },
     description: { type: String, default: "" },
     filename: { type: String, required: true }, // Fiziksel dosya yolu

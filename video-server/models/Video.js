@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
+import { generateId } from '../utils/snowflake.js';
 
 const VideoSchema = new mongoose.Schema({
+  _id: { type: String, default: generateId },
   title: {
     type: String,
     required: true,
