@@ -8,11 +8,13 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@fastify/static": "^6.12.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "mongoose": "^7.6.1",
-    "nodejs-snowflake": "^2.0.1"
+    "nodejs-snowflake": "^2.0.1",
+    "owebjs": "^1.4.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

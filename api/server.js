@@ -1,30 +1,12 @@
 import 'dotenv/config';
-import express from 'express';
+import Oweb from 'owebjs';
 import mongoose from 'mongoose';
-import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fastifyStatic from '@fastify/static';
 
-// ES6'da __dirname alternatifi
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Routes
-import videoRoutes from './routes/videos.js';
-import uploadRoutes from './routes/upload.js';
-import categoryRoutes from './routes/categories.js';
-import tagRoutes from './routes/tags.js';
-import errorHandler from './middleware/errorHandler.js';
-
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Static files (thumbnails için)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Bağlantısı
 mongoose
@@ -35,31 +17,66 @@ mongoose
   .then(() => console.log("✅ MongoDB'ye bağlanıldı"))
   .catch((err) => console.error("❌ MongoDB bağlantı hatası:", err));
 
-// Routes
-app.use('/api/videos', videoRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/tags', tagRoutes);
+// Create and setup the app
+const app = await new Oweb().setup();
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date() });
+// Static files için Fastify plugin kullan
+await app.register(fastifyStatic, {
+  root: path.join(__dirname, 'uploads'),
+  prefix: '/uploads/',
 });
 
-app.get('/api', (req, res) => {
-  res.json('everything is for ado :heart:');
+// Load routes from directory
+await app.loadRoutes({
+  directory: 'routes',
+  hmr: {
+    enabled: true,
+  },
 });
 
-// Error Handler (en sonda olmalı)
-app.use(errorHandler);
+// Error Handler
+app.setInternalErrorHandler((req, res, error) => {
+  console.error("\n[ERROR]:", error);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: 'why you are here?' });
+  // Multer hataları
+  if (error.name === 'MulterError') {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).send({
+        success: false,
+        message: "File size is too much (max 2 GB)"
+      });
+    }
+    return res.status(400).send({
+      success: false,
+      message: error.message
+    });
+  }
+
+  // MongoDB validation hataları
+  if (error.name === 'ValidationError') {
+    return res.status(400).send({
+      success: false,
+      message: "Invalid data",
+      errors: Object.values(error.errors).map(e => e.message)
+    });
+  }
+
+  // MongoDB duplicate key hataları
+  if (error.code === 11000) {
+    return res.status(400).send({
+      success: false,
+      message: "This entry already exists"
+    });
+  }
+
+  // Genel sunucu hatası
+  res.status(error.status || 500).send({
+    success: false,
+    message: error.message || "Server error"
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 API ${PORT} portunda çalışıyor`);
-});
+await app.start({ port: PORT });
+console.log(`🚀 API ${PORT} portunda çalışıyor - owebjs ile`);
  

@@ -39,4 +39,4 @@ coverage/
 # Production
 dist/
 build/
-video-server/uploads/
+uploads/

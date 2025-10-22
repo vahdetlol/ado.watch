@@ -8,6 +8,9 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@fastify/cors": "^8.5.0",
+    "@fastify/multipart": "^7.7.3",
+    "@fastify/static": "^6.12.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@openanime/youtube-dl-exec": "^3.0.10",
     "cors": "^2.8.5",
@@ -16,7 +19,8 @@
     "fluent-ffmpeg": "^2.1.2",
     "mongoose": "^7.6.1",
     "multer": "^1.4.5-lts.1",
-    "nodejs-snowflake": "^2.0.1"
+    "nodejs-snowflake": "^2.0.1",
+    "owebjs": "^1.4.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

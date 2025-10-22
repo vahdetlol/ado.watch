@@ -1,29 +1,14 @@
 import 'dotenv/config';
-import express from "express";
+import { Oweb } from 'owebjs';
 import mongoose from "mongoose";
-import cors from "cors";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-
-// Routes
-import streamRoutes from "./routes/stream.js";
-import youtubeRoutes from "./routes/youtube.js";
-import uploadRoutes from "./routes/upload.js";
-import errorHandler from "./middleware/errorHandler.js";
+import fastifyStatic from '@fastify/static';
+import fastifyCors from '@fastify/cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Static files (uploaded videos and thumbnails)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Bağlantısı
 mongoose
@@ -34,33 +19,37 @@ mongoose
   .then(() => console.log("✅ MongoDB'ye bağlanıldı (Video Server)"))
   .catch((err) => console.error("❌ MongoDB bağlantı hatası:", err));
 
-// Routes
-app.use('/api/stream', streamRoutes);
-app.use('/api/youtube', youtubeRoutes);
-app.use('/api/upload', uploadRoutes);
+const app = new Oweb();
+const server = await app.setup();
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    service: 'video-server',
-    timestamp: new Date() 
-  });
+// CORS
+await server.register(fastifyCors, {
+  origin: '*'
 });
 
-app.get('/api', (req, res) => {
-  res.json({ message: 'Video Server - Download & Stream Service' });
+// Static files (uploaded videos and thumbnails)
+await server.register(fastifyStatic, {
+  root: path.join(__dirname, 'uploads'),
+  prefix: '/uploads/'
 });
 
-// Error Handler (en sonda olmalı)
-app.use(errorHandler);
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: 'Endpoint not found' });
+// Load routes
+await server.loadRoutes({
+  directory: './routes',
+  hmr: {
+    enabled: process.env.NODE_ENV !== 'production'
+  }
 });
 
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
-  console.log(`🚀 Video Server ${PORT} portunda çalışıyor`);
+// Start server
+const { err, address } = await server.start({
+  port: parseInt(process.env.PORT) || 5001,
+  host: '0.0.0.0'
 });
+
+if (err) {
+  console.error('❌ Server başlatma hatası:', err);
+  process.exit(1);
+}
+
+console.log(`🚀 Video Server ${address} adresinde çalışıyor`);
