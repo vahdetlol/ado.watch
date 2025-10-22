@@ -34,6 +34,7 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
     console.log(`⏱️  Duration: ${info.duration}s`);
 
     // Videoyu indir
+    console.log(`⬇️  Downloading with template: ${outputTemplate}`);
     await youtubedl(url, {
       output: outputTemplate,
       format: 'bestvideo[ext=mp4][height<=2160]+bestaudio[ext=m4a]/best[ext=mp4][height<=2160]/best',
@@ -43,12 +44,15 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       mergeOutputFormat: 'mp4',
     });
 
+    console.log(`🔍 Searching for downloaded file...`);
+    
     // İndirilen dosyayı bul (youtube-dl .mp4 veya .mkv olarak kaydedebilir)
     const possibleExtensions = ['.mp4', '.mkv', '.webm'];
     let outputPath = null;
 
     for (const ext of possibleExtensions) {
       const testPath = path.join(outputDir, `${filename}${ext}`);
+      console.log(`  Checking: ${testPath}`);
       if (fs.existsSync(testPath)) {
         outputPath = testPath;
         console.log(`✅ File found: ${testPath}`);
@@ -58,7 +62,10 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
 
     if (!outputPath) {
       // Klasördeki en son oluşturulan dosyayı bul
+      console.log(`⚠️  File not found with expected name, searching directory...`);
       const files = fs.readdirSync(outputDir);
+      console.log(`📂 Files in directory (${files.length} total):`, files.slice(-5));
+      
       const recentFiles = files
         .filter(f => f.startsWith(filename))
         .map(f => ({
@@ -72,6 +79,8 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
         outputPath = recentFiles[0].path;
         console.log(`✅ Found downloaded file: ${outputPath}`);
       } else {
+        console.error(`❌ No files found starting with: ${filename}`);
+        console.error(`📂 All files in directory:`, files);
         throw new Error('İndirilen video dosyası bulunamadı');
       }
     }
