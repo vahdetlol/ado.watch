@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Category from '../../../models/category.js';
+import Category from '../../models/category.js';
 
 // GET /api/categories - Tüm kategorileri listele
 export default class extends Route {

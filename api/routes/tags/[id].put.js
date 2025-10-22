@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Tag from '../../../models/tag.js';
+import Tag from '../../models/tag.js';
 
 // PUT /api/tags/:id - Tag güncelle
 export default class extends Route {

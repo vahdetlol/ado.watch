@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Category from '../../../models/category.js';
+import Category from '../../models/category.js';
 
 // DELETE /api/categories/:id - Kategori sil
 export default class extends Route {

@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Tag from '../../../models/tag.js';
+import Tag from '../../models/tag.js';
 
 // DELETE /api/tags/:id - Tag sil
 export default class extends Route {

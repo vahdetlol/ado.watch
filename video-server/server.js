@@ -44,7 +44,7 @@ await server.loadRoutes({
 // Start server
 const { err, address } = await server.start({
   port: parseInt(process.env.PORT) || 5001,
-  host: '0.0.0.0'
+  host: '127.0.0.1'
 });
 
 if (err) {

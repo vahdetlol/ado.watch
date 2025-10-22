@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Tag from '../../../models/tag.js';
+import Tag from '../../models/tag.js';
 
 // GET /api/tags/:id - Tek tag getir
 export default class extends Route {

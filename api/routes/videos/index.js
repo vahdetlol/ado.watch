@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Video from '../../../models/Video.js';
+import Video from '../../models/Video.js';
 
 // GET /api/videos - Tüm videoları listele (pagination + filtering)
 export default class extends Route {

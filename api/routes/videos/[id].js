@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Video from '../../../models/Video.js';
+import Video from '../../models/Video.js';
 
 // GET /api/videos/:id - Tek video metadata
 export default class extends Route {

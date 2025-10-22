@@ -1,5 +1,5 @@
 import { Route } from 'owebjs';
-import Video from '../../../../models/Video.js';
+import Video from '../../../models/Video.js';
 
 // POST /api/videos/:id/view - İzlenme sayısını artır
 export default class extends Route {
