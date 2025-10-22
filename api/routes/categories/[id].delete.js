@@ -1,15 +1,30 @@
 import { Route } from 'owebjs';
 import Category from '../../models/category.js';
+import { authenticate, authorize } from '../../middleware/auth.js';
 
-// DELETE /api/categories/:id - Kategori sil
+// DELETE /api/categories/:id - Kategori sil (Sadece Admin)
 export default class extends Route {
+  middleware = [authenticate, authorize('admin')];
+
   async handle(req, res) {
     try {
       const category = await Category.findByIdAndDelete(req.params.id);
-      if (!category) return res.status(404).send({ message: "Can't retrieve category" });
-      res.send({ message: "Category deleted" });
+      if (!category) {
+        return res.status(404).send({ 
+          success: false,
+          message: "Category not found" 
+        });
+      }
+      res.send({ 
+        success: true,
+        message: "Category deleted successfully" 
+      });
     } catch (error) {
-      res.status(500).send({ message: "Can't delete category", error: error.message });
+      res.status(500).send({ 
+        success: false,
+        message: "Can't delete category", 
+        error: error.message 
+      });
     }
   }
 }

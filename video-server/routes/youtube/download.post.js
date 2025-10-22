@@ -10,6 +10,7 @@ import {
   downloadFromYouTube, 
   isYouTubeUrl
 } from '../../utils/youtube.js';
+import { authenticate, authorize } from '../../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,9 +50,16 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
   });
 };
 
-// POST /api/youtube/download - YouTube'dan video indir
+// POST /api/youtube/download - YouTube'dan video indir (Admin veya Moderator)
 export default class extends Route {
   async handle(req, reply) {
+    // Manual middleware execution
+    await authenticate(req, reply);
+    if (reply.sent) return;
+    
+    await authorize('admin', 'moderator')(req, reply);
+    if (reply.sent) return;
+    
     try {
       const { url, title, description, categories, tags } = req.body;
 
@@ -115,4 +123,3 @@ export default class extends Route {
     }
   }
 }
-

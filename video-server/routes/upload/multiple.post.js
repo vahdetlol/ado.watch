@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import Video from '../../models/Video.js';
 import { extractThumbnail, getDuration } from '../../utils/ffmpeg.js';
+import { authenticate } from '../../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,99 +45,114 @@ const upload = multer({
   }
 });
 
-// POST /api/upload/multiple - Çoklu video yükleme
+// POST /api/upload/multiple - Çoklu video yükleme (Giriş yapmış kullanıcılar)
 export default class extends Route {
-  middleware = [upload.array('videos', 10)];
-
   async handle(req, reply) {
-    try {
-      if (!req.files || req.files.length === 0) {
-        return reply.status(400).send({ error: 'No video files uploaded' });
-      }
-
-      const { categories, tags } = req.body;
-      const uploadedVideos = [];
-      const failedVideos = [];
-
-      for (const file of req.files) {
+    // Check authentication first
+    await authenticate(req, reply);
+    if (reply.sent) return;
+    
+    // Then handle file upload
+    return new Promise((resolve) => {
+      upload.array('videos', 10)(req, reply, async (err) => {
+        if (err) {
+          reply.status(400).send({ error: err.message });
+          return resolve();
+        }
+        
         try {
-          const videoPath = file.path;
-
-          const thumbFilename = `${path.parse(file.filename).name}.jpg`;
-          const thumbPath = path.join(thumbDir, thumbFilename);
-
-          let thumbnailUrl = null;
-          let duration = 0;
-
-          try {
-            await extractThumbnail(videoPath, thumbPath);
-            thumbnailUrl = `/uploads/thumbnails/${thumbFilename}`;
-            duration = await getDuration(videoPath);
-          } catch (ffmpegError) {
-            console.warn('⚠️ FFmpeg error:', ffmpegError.message);
+          if (!req.files || req.files.length === 0) {
+            reply.status(400).send({ error: 'No video files uploaded' });
+            return resolve();
           }
 
-          const video = new Video({
-            title: file.originalname,
-            description: '',
-            filename: videoPath,
-            mimeType: file.mimetype,
-            size: file.size,
-            thumbnail: thumbnailUrl,
-            duration: Math.floor(duration),
-            categories: categories ? JSON.parse(categories) : [],
-            tags: tags ? JSON.parse(tags) : []
+          const { categories, tags } = req.body;
+          const uploadedVideos = [];
+          const failedVideos = [];
+
+          for (const file of req.files) {
+            try {
+              const videoPath = file.path;
+
+              const thumbFilename = `${path.parse(file.filename).name}.jpg`;
+              const thumbPath = path.join(thumbDir, thumbFilename);
+
+              let thumbnailUrl = null;
+              let duration = 0;
+
+              try {
+                await extractThumbnail(videoPath, thumbPath);
+                thumbnailUrl = `/uploads/thumbnails/${thumbFilename}`;
+                duration = await getDuration(videoPath);
+              } catch (ffmpegError) {
+                console.warn('⚠️ FFmpeg error:', ffmpegError.message);
+              }
+
+              const video = new Video({
+                title: file.originalname,
+                description: '',
+                filename: videoPath,
+                mimeType: file.mimetype,
+                size: file.size,
+                thumbnail: thumbnailUrl,
+                duration: Math.floor(duration),
+                categories: categories ? JSON.parse(categories) : [],
+                tags: tags ? JSON.parse(tags) : []
+              });
+
+              await video.save();
+
+              uploadedVideos.push({
+                id: video._id,
+                title: video.title,
+                thumbnail: video.thumbnail
+              });
+
+              console.log(`✅ Saved: ${video.title}`);
+
+            } catch (error) {
+              console.error(`❌ Failed: ${file.originalname}`, error.message);
+              failedVideos.push({
+                filename: file.originalname,
+                error: error.message
+              });
+
+              if (fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+              }
+            }
+          }
+
+          reply.status(201).send({
+            success: true,
+            message: `${uploadedVideos.length} video uploaded successfully`,
+            uploadedVideos,
+            failedVideos,
+            total: req.files.length,
+            successful: uploadedVideos.length,
+            failed: failedVideos.length
           });
-
-          await video.save();
-
-          uploadedVideos.push({
-            id: video._id,
-            title: video.title,
-            thumbnail: video.thumbnail
-          });
-
-          console.log(`✅ Saved: ${video.title}`);
+          resolve();
 
         } catch (error) {
-          console.error(`❌ Failed: ${file.originalname}`, error.message);
-          failedVideos.push({
-            filename: file.originalname,
-            error: error.message
+          console.error('Multiple upload error:', error);
+
+          if (req.files) {
+            req.files.forEach(file => {
+              if (fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+              }
+            });
+          }
+
+          reply.status(500).send({
+            error: 'Multiple video upload failed',
+            message: error.message
           });
-
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
+          resolve();
         }
-      }
-
-      return reply.status(201).send({
-        success: true,
-        message: `${uploadedVideos.length} video uploaded successfully`,
-        uploadedVideos,
-        failedVideos,
-        total: req.files.length,
-        successful: uploadedVideos.length,
-        failed: failedVideos.length
       });
-
-    } catch (error) {
-      console.error('Multiple upload error:', error);
-
-      if (req.files) {
-        req.files.forEach(file => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-        });
-      }
-
-      return reply.status(500).send({
-        error: 'Multiple video upload failed',
-        message: error.message
-      });
-    }
+    });
   }
 }
 

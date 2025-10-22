@@ -10,6 +10,7 @@ import {
   downloadPlaylist,
   isPlaylistUrl 
 } from '../../../utils/youtube.js';
+import { authenticate, authorize } from '../../../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,9 +50,16 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
   });
 };
 
-// POST /api/youtube/playlist/download - YouTube Playlist'ten tüm videoları indir
+// POST /api/youtube/playlist/download - YouTube Playlist'ten tüm videoları indir (Admin veya Moderator)
 export default class extends Route {
   async handle(req, reply) {
+    // Manual middleware execution
+    await authenticate(req, reply);
+    if (reply.sent) return;
+    
+    await authorize('admin', 'moderator')(req, reply);
+    if (reply.sent) return;
+    
     try {
       const { url, categories, tags } = req.body;
 

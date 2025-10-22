@@ -3,11 +3,11 @@ import path from 'path';
 import fs from 'fs';
 
 /**
- * YouTube'dan video indir
- * @param {string} url - YouTube video URL'i
- * @param {string} outputDir - Videonun kaydedileceği klasör
- * @param {boolean} isPlaylist - Playlist mi indiriliyor
- * @returns {Promise<Object>} - İndirilen video bilgileri
+ * Download from YouTube
+ * @param {string} url - YouTube video URL
+ * @param {string} outputDir - Videos download path
+ * @param {boolean} isPlaylist - Is it a Playlist
+ * @returns {Promise<Object>} - Downloaded video information
  */
 const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
   try {
@@ -16,10 +16,7 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    console.log(`📂 Output directory: ${outputDir}`);
-
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const outputTemplate = path.join(outputDir, `${filename}.%(ext)s`);
+    console.log(`Output directory: ${outputDir}`);
 
     // Video bilgilerini al
     const info = await youtubedl(url, {
@@ -30,64 +27,55 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       noPlaylist: !isPlaylist,
     });
 
-    console.log(`📹 Video title: ${info.title}`);
-    console.log(`⏱️  Duration: ${info.duration}s`);
+    console.log(`Video title: ${info.title}`);
+    console.log(`Duration: ${info.duration}s`);
+
+    // Önce mevcut dosya sayısını al
+    const existingFiles = fs.readdirSync(outputDir);
+    const existingCount = existingFiles.length;
+
+    // Benzersiz dosya adı oluştur
+    const uniqueId = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const outputTemplate = path.join(outputDir, `${uniqueId}.%(ext)s`);
 
     // Videoyu indir
-    console.log(`⬇️  Downloading with template: ${outputTemplate}`);
+    console.log(`Downloading...`);
     await youtubedl(url, {
       output: outputTemplate,
-      format: 'bestvideo[ext=mp4][height<=2160]+bestaudio[ext=m4a]/best[ext=mp4][height<=2160]/best',
+      format: 'best[ext=mp4]/best',
       noWarnings: true,
       noCallHome: true,
       noPlaylist: !isPlaylist,
-      mergeOutputFormat: 'mp4',
     });
 
     console.log(`🔍 Searching for downloaded file...`);
     
-    // İndirilen dosyayı bul (youtube-dl .mp4 veya .mkv olarak kaydedebilir)
-    const possibleExtensions = ['.mp4', '.mkv', '.webm'];
-    let outputPath = null;
+    // İndirdikten sonra yeni dosyaları bul
+    const currentFiles = fs.readdirSync(outputDir);
+    const newFiles = currentFiles.filter(f => !existingFiles.includes(f));
+    
+    console.log(`New files found:`, newFiles);
 
-    for (const ext of possibleExtensions) {
-      const testPath = path.join(outputDir, `${filename}${ext}`);
-      console.log(`  Checking: ${testPath}`);
-      if (fs.existsSync(testPath)) {
-        outputPath = testPath;
-        console.log(`✅ File found: ${testPath}`);
-        break;
+    if (newFiles.length === 0) {
+      // Eğer yeni dosya bulunamazsa, uniqueId ile başlayan dosyaları ara
+      const matchingFiles = currentFiles.filter(f => f.startsWith(uniqueId.split('-')[0]));
+      if (matchingFiles.length > 0) {
+        newFiles.push(matchingFiles[0]);
       }
     }
 
-    if (!outputPath) {
-      // Klasördeki en son oluşturulan dosyayı bul
-      console.log(`⚠️  File not found with expected name, searching directory...`);
-      const files = fs.readdirSync(outputDir);
-      console.log(`📂 Files in directory (${files.length} total):`, files.slice(-5));
-      
-      const recentFiles = files
-        .filter(f => f.startsWith(filename))
-        .map(f => ({
-          name: f,
-          path: path.join(outputDir, f),
-          time: fs.statSync(path.join(outputDir, f)).mtime.getTime()
-        }))
-        .sort((a, b) => b.time - a.time);
-
-      if (recentFiles.length > 0) {
-        outputPath = recentFiles[0].path;
-        console.log(`✅ Found downloaded file: ${outputPath}`);
-      } else {
-        console.error(`❌ No files found starting with: ${filename}`);
-        console.error(`📂 All files in directory:`, files);
-        throw new Error('İndirilen video dosyası bulunamadı');
-      }
+    if (newFiles.length === 0) {
+      throw new Error('No downloaded file found');
     }
+
+    // İlk yeni dosyayı kullan
+    const downloadedFile = newFiles[0];
+    const outputPath = path.join(outputDir, downloadedFile);
 
     // Dosya boyutunu al
     const stats = fs.statSync(outputPath);
-    console.log(`📦 File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`Downloaded: ${downloadedFile}`);
+    console.log(`File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     return {
       success: true,
@@ -103,7 +91,7 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
 
   } catch (error) {
     console.error('YouTube download error:', error);
-    throw new Error(`YouTube'dan indirme başarısız: ${error.message}`);
+    throw new Error(`YouTube download failed: ${error.message}`);
   }
 };
 
@@ -130,7 +118,7 @@ const getYouTubeInfo = async (url) => {
       viewCount: info.view_count,
     };
   } catch (error) {
-    throw new Error(`YouTube bilgileri alınamadı: ${error.message}`);
+    throw new Error(`YouTube information could not be retrieved: ${error.message}`);
   }
 };
 
@@ -150,7 +138,7 @@ const getPlaylistInfo = async (url) => {
 
     // Playlist mi kontrol et
     if (!info.entries || !Array.isArray(info.entries)) {
-      throw new Error('Bu bir playlist değil');
+      throw new Error('This is not a playlist');
     }
 
     return {
@@ -166,7 +154,7 @@ const getPlaylistInfo = async (url) => {
       }))
     };
   } catch (error) {
-    throw new Error(`Playlist bilgileri alınamadı: ${error.message}`);
+    throw new Error(`Playlist information could not be retrieved: ${error.message}`);
   }
 };
 
@@ -185,14 +173,14 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
 
     // Playlist bilgilerini al
     const playlistInfo = await getPlaylistInfo(playlistUrl);
-    console.log(`📋 Playlist: ${playlistInfo.title} (${playlistInfo.videoCount} video)`);
+    console.log(`Playlist: ${playlistInfo.title} (${playlistInfo.videoCount} video)`);
 
     const downloadedVideos = [];
 
     // Her videoyu tek tek indir
     for (let i = 0; i < playlistInfo.videos.length; i++) {
       const videoInfo = playlistInfo.videos[i];
-      console.log(`\n[${i + 1}/${playlistInfo.videoCount}] İndiriliyor: ${videoInfo.title}`); 
+      console.log(`\n[${i + 1}/${playlistInfo.videoCount}] Downloading: ${videoInfo.title}`);
 
       try {
         const result = await downloadFromYouTube(videoInfo.url, outputDir, false);
@@ -201,9 +189,9 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
           playlistIndex: i + 1,
           playlistTitle: playlistInfo.title
         });
-        console.log(`✅ Tamamlandı: ${videoInfo.title}`);
+        console.log(`Completed: ${videoInfo.title}`);
       } catch (error) {
-        console.error(`❌ Hata (${videoInfo.title}):`, error.message);
+        console.error(`Error (${videoInfo.title}):`, error.message);
         // Bir video hata verse bile devam et
         downloadedVideos.push({
           error: true,
@@ -215,7 +203,7 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
 
     return downloadedVideos;
   } catch (error) {
-    throw new Error(`Playlist indirilemedi: ${error.message}`);
+    throw new Error(`Playlist could not be downloaded: ${error.message}`);
   }
 };
 
