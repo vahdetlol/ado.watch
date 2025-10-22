@@ -78,5 +78,5 @@ app.setInternalErrorHandler((req, res, error) => {
 
 const PORT = process.env.PORT || 5000;
 await app.start({ port: PORT });
-console.log(`🚀 API ${PORT} portunda çalışıyor - owebjs ile`);
+console.log(` API is working on http://127.0.0.1:${PORT} `);
  

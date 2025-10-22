@@ -52,4 +52,4 @@ if (err) {
   process.exit(1);
 }
 
-console.log(`🚀 Video Server ${address} adresinde çalışıyor`);
+console.log(` Server is working on ${address}`);
