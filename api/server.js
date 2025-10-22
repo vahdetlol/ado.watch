@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fastifyStatic from '@fastify/static';
+import cors from '@fastify/cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +20,12 @@ mongoose
 
 // Create and setup the app
 const app = await new Oweb().setup();
+
+// CORS desteği ekle
+await app.register(cors, {
+  origin: '*', // Tüm originlere izin ver (production'da daha spesifik olmalı)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+});
 
 // Static files için Fastify plugin kullan
 await app.register(fastifyStatic, {

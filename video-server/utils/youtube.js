@@ -16,8 +16,10 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.mp4`;
-    const outputPath = path.join(outputDir, filename);
+    console.log(`📂 Output directory: ${outputDir}`);
+
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const outputTemplate = path.join(outputDir, `${filename}.%(ext)s`);
 
     // Video bilgilerini al
     const info = await youtubedl(url, {
@@ -25,22 +27,58 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       noWarnings: true,
       noCallHome: true,
       preferFreeFormats: true,
-      noPlaylist: !isPlaylist, // Playlist kontrolü
+      noPlaylist: !isPlaylist,
     });
 
-    // Videoyu indir - 4K dahil en iyi kalite
+    console.log(`📹 Video title: ${info.title}`);
+    console.log(`⏱️  Duration: ${info.duration}s`);
+
+    // Videoyu indir
     await youtubedl(url, {
-      output: outputPath,
-      format: 'bestvideo[ext=mp4][height<=2160]+bestaudio[ext=m4a]/best[ext=mp4][height<=2160]/best', 
-      // 4K (2160p) dahil en iyi kalite, mp4 formatında
+      output: outputTemplate,
+      format: 'bestvideo[ext=mp4][height<=2160]+bestaudio[ext=m4a]/best[ext=mp4][height<=2160]/best',
       noWarnings: true,
       noCallHome: true,
       noPlaylist: !isPlaylist,
-      mergeOutputFormat: 'mp4', // Video ve audio'yu birleştir
+      mergeOutputFormat: 'mp4',
     });
+
+    // İndirilen dosyayı bul (youtube-dl .mp4 veya .mkv olarak kaydedebilir)
+    const possibleExtensions = ['.mp4', '.mkv', '.webm'];
+    let outputPath = null;
+
+    for (const ext of possibleExtensions) {
+      const testPath = path.join(outputDir, `${filename}${ext}`);
+      if (fs.existsSync(testPath)) {
+        outputPath = testPath;
+        console.log(`✅ File found: ${testPath}`);
+        break;
+      }
+    }
+
+    if (!outputPath) {
+      // Klasördeki en son oluşturulan dosyayı bul
+      const files = fs.readdirSync(outputDir);
+      const recentFiles = files
+        .filter(f => f.startsWith(filename))
+        .map(f => ({
+          name: f,
+          path: path.join(outputDir, f),
+          time: fs.statSync(path.join(outputDir, f)).mtime.getTime()
+        }))
+        .sort((a, b) => b.time - a.time);
+
+      if (recentFiles.length > 0) {
+        outputPath = recentFiles[0].path;
+        console.log(`✅ Found downloaded file: ${outputPath}`);
+      } else {
+        throw new Error('İndirilen video dosyası bulunamadı');
+      }
+    }
 
     // Dosya boyutunu al
     const stats = fs.statSync(outputPath);
+    console.log(`📦 File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     return {
       success: true,

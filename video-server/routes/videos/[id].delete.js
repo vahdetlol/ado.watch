@@ -19,7 +19,8 @@ export default class extends Route {
         fs.unlinkSync(video.filename);
       }
       if (video.thumbnail) {
-        const thumbPath = path.join(__dirname, '..', '..', video.thumbnail);
+        // Ana proje dizinindeki uploads klasörü
+        const thumbPath = path.join(__dirname, '..', '..', '..', video.thumbnail);
         if (fs.existsSync(thumbPath)) {
           fs.unlinkSync(thumbPath);
         }

@@ -14,6 +14,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Ana proje dizinindeki uploads klasörü
 const videoDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'videos');
 const thumbDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'thumbnails');
 
