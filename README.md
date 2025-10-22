@@ -1,62 +1,56 @@
-# Video Server API
+# API Documentation
 
-A simple video server with RESTful API endpoints.
+## Environment Variables
+
+Create a `.env` file:
+
+```env
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/video_api
+NODE_ENV=development
+```
 
 ## API Endpoints
 
 ### Videos
 
-#### GET /api/videos
+- `GET /videos` - List all videos (pagination, search, filter)
+- `GET /videos/:id` - Single video details
+- `PUT /videos/:id` - Update video
+- `DELETE /videos/:id` - Delete video
+- `POST /videos/:id/view` - Increase view count
 
-Get all videos
+### Upload
 
-- **Response**: Array of video objects
+- `POST /upload` - Upload video (multipart/form-data)
 
-#### GET /api/videos/:id
+### Categories
 
-Get video by ID
+- `GET /categories` - All categories
+- `GET /categories/:id` - Single category
+- `POST /categories` - Create category
+- `PUT /categories/:id` - Update category
+- `DELETE /categories/:id` - Delete category
 
-- **Parameters**: `id` - Video ID
-- **Response**: Video object
+### Tags
 
-#### POST /api/videos
+- `GET /tags` - All tags
+- `GET /tags/:id` - Single tag
+- `POST /tags` - Create tag
+- `PUT /tags/:id` - Update tag
+- `DELETE /tags/:id` - Delete tag
 
-Upload new video
+### Health
 
-- **Body**: Form data with video file
-- **Response**: Created video object
+- `GET /health` - Server status
 
-#### PUT /api/videos/:id
+## Requirements
 
-Update video metadata
+- Node.js >= 14 (for ES6 module support >= 14.x)
+- MongoDB
 
-- **Parameters**: `id` - Video ID
-- **Body**: JSON with updated fields
-- **Response**: Updated video object
+## Technical Details
 
-#### DELETE /api/videos/:id
-
-Delete video
-
-- **Parameters**: `id` - Video ID
-- **Response**: Success message
-
-### Streaming
-
-#### GET /stream/:id
-
-Stream video content
-
-- **Parameters**: `id` - Video ID
-- **Headers**: Supports Range requests for partial content
-- **Response**: Video stream
-
-## Response Format
-
-All API responses follow this format:
-
-{
-    "success": true,
-    "data": {},
-    "message": "Operation completed"
-}
+- **Module System**: ES6 (import/export)
+- **JavaScript Version**: ES2015+
+- **FFmpeg**: @ffmpeg-installer/ffmpeg (internal)
