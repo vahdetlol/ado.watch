@@ -2,6 +2,7 @@ import { Route } from 'owebjs';
 import jwt from 'jsonwebtoken';
 import User from '../../models/User.js';
 import { bruteForceProtection, recordLoginAttempt } from '../../middleware/bruteForce.js';
+import { getNow } from '../../utils/timezone.js';
 
 export default class extends Route {
   middleware = [bruteForceProtection];
@@ -54,7 +55,7 @@ export default class extends Route {
       });
     }
 
-    user.lastLogin = new Date();
+    user.lastLogin = getNow();
     await user.save();
 
     await recordLoginAttempt(req, true);

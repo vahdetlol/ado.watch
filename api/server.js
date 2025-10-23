@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import fastifyStatic from '@fastify/static';
 import cors from '@fastify/cors';
 import { registerGlobalRateLimit } from './middleware/rateLimiter.js';
+import { registerSecurityMiddleware } from './middleware/security.js';
+import { registerXSSProtection } from './middleware/xss.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +30,13 @@ await app.register(cors, {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 });
 
+// Register security middleware
+await registerSecurityMiddleware(app);
+
+// Register XSS protection
+registerXSSProtection(app);
+
+// Register rate limiting
 registerGlobalRateLimit(app);
 
 // Use Fastify plugin for serving static files

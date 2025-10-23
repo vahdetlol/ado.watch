@@ -7,6 +7,8 @@ import { dirname } from 'path';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 import { registerGlobalRateLimit } from './middleware/rateLimiter.js';
+import { registerSecurityMiddleware } from './middleware/security.js';
+import { registerXSSProtection } from './middleware/xss.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,6 +30,13 @@ await server.register(fastifyCors, {
   origin: '*'
 });
 
+// Register security middleware
+registerSecurityMiddleware(server);
+
+// Register XSS protection
+registerXSSProtection(server);
+
+// Register rate limiting
 registerGlobalRateLimit(server);
 
 // Static files (uploaded videos and thumbnails)

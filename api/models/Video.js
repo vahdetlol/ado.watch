@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { generateId } from '../utils/snowflake.js';
+import { getNow } from '../utils/timezone.js';
 
 const videoSchema = new mongoose.Schema(
   {
@@ -15,7 +16,11 @@ const videoSchema = new mongoose.Schema(
   categories: [{ type: String }], // Category names (string array)
   tags: [{ type: String }], // Tag names (string array)
   },
-  { timestamps: true }
+  { 
+    timestamps: {
+      currentTime: () => getNow()
+    }
+  }
 );
 
 export default mongoose.model("Video", videoSchema);

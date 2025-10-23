@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { getNow } from '../utils/timezone.js';
 
 // Simple unique ID generator
 const generateUniqueId = () => {
@@ -46,14 +47,16 @@ const userSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: getNow
   },
   lastLogin: {
     type: Date
   }
 }, {
   _id: false,
-  timestamps: true
+  timestamps: {
+    currentTime: () => getNow()
+  }
 });
 
 // Hash password before saving

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { getNow } from '../utils/timezone.js';
 
 const loginAttemptSchema = new mongoose.Schema({
   ip: {
@@ -16,7 +17,7 @@ const loginAttemptSchema = new mongoose.Schema({
   },
   attemptTime: {
     type: Date,
-    default: Date.now,
+    default: getNow,
     expires: 900
   }
 });
@@ -29,12 +30,13 @@ loginAttemptSchema.statics.recordAttempt = async function(ip, username, success)
     ip,
     username: username.toLowerCase(),
     success,
-    attemptTime: new Date()
+    attemptTime: getNow()
   });
 };
 
 loginAttemptSchema.statics.getRecentFailedAttempts = async function(ip, username, timeWindowMinutes = 15) {
-  const timeLimit = new Date(Date.now() - timeWindowMinutes * 60 * 1000);
+  const now = getNow();
+  const timeLimit = new Date(now.getTime() - timeWindowMinutes * 60 * 1000);
   
   return await this.countDocuments({
     $or: [
@@ -60,7 +62,8 @@ loginAttemptSchema.statics.clearAttempts = async function(ip, username) {
 };
 
 loginAttemptSchema.statics.getBlockTimeRemaining = async function(ip, username, timeWindowMinutes = 15) {
-  const timeLimit = new Date(Date.now() - timeWindowMinutes * 60 * 1000);
+  const now = getNow();
+  const timeLimit = new Date(now.getTime() - timeWindowMinutes * 60 * 1000);
   
   const oldestAttempt = await this.findOne({
     $or: [
@@ -75,7 +78,7 @@ loginAttemptSchema.statics.getBlockTimeRemaining = async function(ip, username, 
   }
 
   const blockUntil = new Date(oldestAttempt.attemptTime.getTime() + timeWindowMinutes * 60 * 1000);
-  const remainingMs = blockUntil - Date.now();
+  const remainingMs = blockUntil - now.getTime();
   
   return Math.max(0, Math.ceil(remainingMs / 1000 / 60));
 };
