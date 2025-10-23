@@ -11,14 +11,15 @@ import { registerGlobalRateLimit } from './middleware/rateLimiter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
   })
-  .then(() => console.log("✅ Connected to MongoDB (Video Server)"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log("Connected to MongoDB (Video Server)"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 const app = new Oweb();
 const server = await app.setup();
@@ -54,4 +55,4 @@ if (err) {
   process.exit(1);
 }
 
-console.log(` Server is working on ${address}`);
+console.log(`Video server is working on ${address}`);
