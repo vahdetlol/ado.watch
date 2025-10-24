@@ -73,6 +73,4 @@ export function registerXSSProtection(app) {
       request.params = sanitizeObject(request.params);
     }
   });
-  
-  console.log('✅ XSS Protection middleware registered');
 }

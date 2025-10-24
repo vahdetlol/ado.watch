@@ -85,7 +85,7 @@ export default class extends Route {
                 thumbnailUrl = `/uploads/thumbnails/${thumbFilename}`;
                 duration = await getDuration(videoPath);
               } catch (ffmpegError) {
-                console.warn('⚠️ FFmpeg error:', ffmpegError.message);
+                console.warn('FFmpeg error:', ffmpegError.message);
               }
 
               const video = new Video({
@@ -108,7 +108,7 @@ export default class extends Route {
                 thumbnail: video.thumbnail
               });
 
-              console.log(`✅ Saved: ${video.title}`);
+              console.log(`Saved: ${video.title}`);
 
             } catch (error) {
               console.error(`❌ Failed: ${file.originalname}`, error.message);

@@ -40,6 +40,7 @@ export default class extends Route {
     }
 
     await Video.findByIdAndDelete(req.params.id);
+    console.log(`Video ${req.params.id} deleted by user ${req.user.id}`);
     return reply.send({ 
       success: true,
       message: 'Video deleted successfully' 

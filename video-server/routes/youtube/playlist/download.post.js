@@ -71,7 +71,7 @@ export default class extends Route {
         return reply.status(400).send({ error: 'Invalid YouTube Playlist URL' });
       }
 
-      console.log(`📋 Downloading playlist: ${url}`);
+      console.log(`Downloading playlist: ${url}`);
 
       const downloadedVideos = await downloadPlaylist(url, videoDir);
       
@@ -98,7 +98,7 @@ export default class extends Route {
               thumbnailPath = `/uploads/thumbnails/${thumbFilename}`;
             }
           } catch (thumbError) {
-            console.warn('⚠️ Thumbnail could not be downloaded:', thumbError.message);
+            console.warn('Thumbnail could not be downloaded:', thumbError.message);
           }
 
           const video = new Video({
@@ -119,10 +119,10 @@ export default class extends Route {
             title: video.title,
             playlistIndex: videoData.playlistIndex
           });
-
-          console.log(`✅ Saved to DB: ${video.title}`);
+          console.log('Youtube playlist downloaded by ', req.user.username);
+          console.log(`Saved to DB: ${video.title}`);
         } catch (dbError) {
-          console.error(`❌ DB save error (${videoData.title}):`, dbError.message);
+          console.error(`DB save error (${videoData.title}):`, dbError.message);
           failedVideos.push({
             title: videoData.title,
             error: dbError.message

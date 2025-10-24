@@ -8,6 +8,8 @@ Create a `.env` file:
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/video_api
 NODE_ENV=development
+INSTANCE_ID=2
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 ```
 
 ## API Endpoints

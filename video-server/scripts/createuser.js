@@ -10,7 +10,7 @@ const rl = readline.createInterface({
 
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
-async function createAdmin() {
+async function createuser() {
   try {
   // Connect to MongoDB
     await mongoose.connect(process.env.MONGO_URI, {
@@ -63,4 +63,4 @@ async function createAdmin() {
   }
 }
 
-createAdmin();
+createuser();

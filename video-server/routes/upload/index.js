@@ -70,7 +70,7 @@ export default class extends Route {
           const { title, description, categories, tags } = req.body;
           const videoPath = req.file.path;
 
-          console.log(`📤 Video uploaded: ${req.file.originalname}`);
+          console.log(`Video uploaded: ${req.file.originalname}`);
 
           const thumbFilename = `${path.parse(req.file.filename).name}.jpg`;
           const thumbPath = path.join(thumbDir, thumbFilename);
@@ -81,12 +81,12 @@ export default class extends Route {
           try {
             await extractThumbnail(videoPath, thumbPath);
             thumbnailUrl = `/uploads/thumbnails/${thumbFilename}`;
-            console.log(`✅ Thumbnail created: ${thumbFilename}`);
+            console.log(`Thumbnail created: ${thumbFilename}`);
 
             duration = await getDuration(videoPath);
-            console.log(`⏱️ Duration: ${duration}s`);
+            console.log(`Duration: ${duration}s`);
           } catch (ffmpegError) {
-            console.warn('⚠️ FFmpeg error:', ffmpegError.message);
+            console.warn('FFmpeg error:', ffmpegError.message);
           }
 
           const video = new Video({

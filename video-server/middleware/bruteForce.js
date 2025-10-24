@@ -18,7 +18,7 @@ export const bruteForceProtection = async (req, res) => {
     if (isBlocked) {
       const remainingMinutes = await LoginAttempt.getBlockTimeRemaining(ip, identifier, 15);
       
-  console.log(`🚫 Brute force protection activated`);
+  console.log(`Brute force protection activated`);
       console.log(`   IP: ${ip}`);
   console.log(`   User: ${identifier}`);
   console.log(`   Time remaining: ${remainingMinutes} minutes`);
@@ -36,7 +36,7 @@ export const bruteForceProtection = async (req, res) => {
     const remainingAttempts = Math.max(0, 5 - failedAttempts);
 
     if (failedAttempts > 0) {
-      console.log(`⚠️  Login attempt detected`);
+      console.log(`   Login attempt detected`);
       console.log(`   IP: ${ip}`);
       console.log(`   User: ${identifier}`);
       console.log(`   Failed attempts: ${failedAttempts}/5`);
@@ -64,14 +64,14 @@ export const recordLoginAttempt = async (req, success) => {
 
     if (success) {
       await LoginAttempt.clearAttempts(ip, identifier);
-      console.log(`✅ Successful login - brute force records cleared`);
+      console.log(`   Successful login - brute force records cleared`);
       console.log(`   IP: ${ip}`);
       console.log(`   User: ${identifier}`);
     } else {
       const failedAttempts = await LoginAttempt.getRecentFailedAttempts(ip, identifier, 15);
       const remainingAttempts = Math.max(0, 5 - failedAttempts);
-      
-      console.log(`❌ Failed login attempt recorded`);
+
+      console.log(`   Failed login attempt recorded`);
       console.log(`   IP: ${ip}`);
       console.log(`   User: ${identifier}`);
       console.log(`   Total failed: ${failedAttempts}/5`);

@@ -89,6 +89,4 @@ export function registerSecurityMiddleware(app) {
       }
     }
   });
-
-  console.log('✅ Security middleware registered (Video Server)');
 }

@@ -26,6 +26,7 @@ export default class extends Route {
         message: 'Video not found' 
       });
     }
+    console.log(`Video ${req.params.id} updated by user ${req.user.username}`);
 
     return reply.send({
       success: true,

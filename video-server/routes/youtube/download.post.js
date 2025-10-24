@@ -71,7 +71,7 @@ export default class extends Route {
         return reply.status(400).send({ error: 'Invalid YouTube URL' });
       }
 
-      console.log(`📥 Downloading: ${url}`);
+      console.log(`Downloading: ${url}`);
       const downloadResult = await downloadFromYouTube(url, videoDir);
 
       const thumbFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
@@ -80,10 +80,10 @@ export default class extends Route {
       try {
         if (downloadResult.thumbnail) {
           await downloadThumbnail(downloadResult.thumbnail, thumbPath);
-          console.log(`✅ Thumbnail downloaded: ${thumbFilename}`);
+          console.log(`Thumbnail downloaded: ${thumbFilename}`);
         }
       } catch (thumbError) {
-        console.warn('⚠️ Thumbnail download failed:', thumbError.message);
+        console.warn('Thumbnail download failed:', thumbError.message);
       }
 
       const video = new Video({
@@ -100,8 +100,9 @@ export default class extends Route {
 
       await video.save();
 
-      console.log(`✅ Video saved: ${video.title}`);
-
+      
+      console.log(`Video saved: ${video.title}`);
+      console.log('Youtube video downloaded by ', req.user.username);
       return reply.status(201).send({
         success: true,
         video: {
