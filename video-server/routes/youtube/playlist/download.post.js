@@ -17,8 +17,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Uploads folder in the main project directory
-const videoDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'videos');
-const thumbDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'thumbnails');
+const videoDir = path.join(__dirname, '..', '..', '..', 'uploads', 'videos');
+const thumbDir = path.join(__dirname, '..', '..', '..', 'uploads', 'thumbnails');
 
 if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
 if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });

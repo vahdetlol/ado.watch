@@ -4,6 +4,7 @@ import { authenticate, authorize } from '../../middleware/auth.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { deleteFromB2 } from '../../utils/backblaze.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,20 +28,32 @@ export default class extends Route {
       });
     }
 
-  // Delete physical files
-    if (fs.existsSync(video.filename)) {
-      fs.unlinkSync(video.filename);
-    }
-    if (video.thumbnail) {
-  // Uploads folder in the main project directory
-      const thumbPath = path.join(__dirname, '..', '..', '..', video.thumbnail);
-      if (fs.existsSync(thumbPath)) {
-        fs.unlinkSync(thumbPath);
+    // Delete files from Backblaze B2
+    try {
+      if (video.b2FileId && video.url1) {
+        const fileName = video.url1.split('/').pop();
+        await deleteFromB2(video.b2FileId, `videos/${fileName}`);
+        console.log(`Deleted main video from B2: ${fileName}`);
       }
+      
+      if (video.b2FileId720p && video.url2) {
+        const fileName720p = video.url2.split('/').pop();
+        await deleteFromB2(video.b2FileId720p, `videos/${fileName720p}`);
+        console.log(`Deleted 720p video from B2: ${fileName720p}`);
+      }
+      
+      if (video.b2ThumbnailId && video.thumbnail) {
+        const thumbFileName = video.thumbnail.split('/').pop();
+        await deleteFromB2(video.b2ThumbnailId, `thumbnails/${thumbFileName}`);
+        console.log(`Deleted thumbnail from B2: ${thumbFileName}`);
+      }
+    } catch (b2Error) {
+      console.warn('B2 deletion error (continuing with DB deletion):', b2Error.message);
     }
 
+    // Delete from database
     await Video.findByIdAndDelete(req.params.id);
-    console.log(`Video ${req.params.id} deleted by user ${req.user.id}`);
+    console.log(`Video ${req.params.id} deleted by user ${req.user.username}`);
     return reply.send({ 
       success: true,
       message: 'Video deleted successfully' 

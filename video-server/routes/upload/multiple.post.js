@@ -7,12 +7,13 @@ import { dirname } from 'path';
 import Video from '../../models/Video.js';
 import { extractThumbnail, getDuration, processVideo, create720pVersion } from '../../utils/ffmpeg.js';
 import { authenticate } from '../../middleware/auth.js';
+import { uploadMultipleVersionsToB2 } from '../../utils/backblaze.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const videoDir = path.join(__dirname, '..', '..', '..', 'uploads', 'videos');
-const thumbDir = path.join(__dirname, '..', '..', '..', 'uploads', 'thumbnails');
+const videoDir = path.join(__dirname, '..', '..', 'uploads', 'videos');
+const thumbDir = path.join(__dirname, '..', '..', 'uploads', 'thumbnails');
 
 if (!fs.existsSync(videoDir)) fs.mkdirSync(videoDir, { recursive: true });
 if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
@@ -132,18 +133,31 @@ export default class extends Route {
                 console.warn('FFmpeg error:', ffmpegError.message);
               }
 
+              // Upload to Backblaze B2
+              console.log('Uploading to Backblaze B2...');
+              const b2Results = await uploadMultipleVersionsToB2(
+                finalVideoPath,
+                final720pPath,
+                fs.existsSync(thumbPath) ? thumbPath : null
+              );
+
               const video = new Video({
                 title: file.originalname,
                 description: '',
-                filename: finalVideoPath,
-                filename720p: final720pPath,
+                url1: b2Results.video?.fileUrl || null,
+                url2: b2Results.video720p?.fileUrl || null,
                 mimeType: file.mimetype,
-                size: finalSize,
-                size720p: final720pSize,
-                thumbnail: thumbnailUrl,
+                size1: finalSize,
+                size2: final720pSize,
+                thumbnail: b2Results.thumbnail?.fileUrl || null,
                 duration: Math.floor(duration),
                 categories: categories ? JSON.parse(categories) : [],
-                tags: tags ? JSON.parse(tags) : []
+                tags: tags ? JSON.parse(tags) : [],
+                uploader: req.user._id,
+                // Store B2 file IDs for future reference
+                b2FileId: b2Results.video?.fileId,
+                b2FileId720p: b2Results.video720p?.fileId,
+                b2ThumbnailId: b2Results.thumbnail?.fileId,
               });
 
               await video.save();

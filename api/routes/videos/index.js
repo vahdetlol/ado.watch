@@ -15,7 +15,8 @@ export default class extends Route {
       const videos = await Video.find(query)
         .sort({ createdAt: -1 })
         .limit(limit * 1)
-        .skip((page - 1) * limit);
+        .skip((page - 1) * limit)
+        .select('_id title description url32 mimeType size1 size2 thumbnail duration views categories tags createdAt updatedAt');
 
       const count = await Video.countDocuments(query);
 
