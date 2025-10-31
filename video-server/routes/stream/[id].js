@@ -2,11 +2,12 @@ import { Route } from 'owebjs';
 import fs from 'fs';
 import Video from '../../models/Video.js';
 
-// GET /api/stream/:id - Video stream
+// GET /api/stream/:id - Video stream (supports ?quality=720p parameter)
 export default class extends Route {
   async handle(req, reply) {
     try {
       const id = req.params.id;
+      const quality = req.query.quality; // 'original' or '720p'
       
       // CORS headers for video streaming
       reply.header('Access-Control-Allow-Origin', '*');
@@ -17,9 +18,15 @@ export default class extends Route {
       
       if (!video) return reply.status(404).send("video not found");
 
-      const filePath = video.filename;
+      // Determine which file to stream based on quality parameter
+      let filePath = video.filename; // default to original/main version
       
-      console.log(`📺 Wanted a video stream: ${video.title} (${filePath})`);
+      if (quality === '720p' && video.filename720p) {
+        filePath = video.filename720p;
+        console.log(`📺 Streaming 720p: ${video.title}`);
+      } else {
+        console.log(`📺 Streaming original: ${video.title}`);
+      }
       
       if (!fs.existsSync(filePath)) {
         return reply.status(404).send("video file not found");

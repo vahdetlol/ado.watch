@@ -10,6 +10,7 @@ import {
   downloadFromYouTube, 
   isYouTubeUrl
 } from '../../utils/youtube.js';
+import { processVideo, create720pVersion } from '../../utils/ffmpeg.js';
 import { authenticate, authorize } from '../../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,8 +57,8 @@ export default class extends Route {
     // Manual middleware execution
     await authenticate(req, reply);
     if (reply.sent) return;
-    
-    await authorize('admin', 'moderator')(req, reply);
+
+    await authorize('admin', 'moderator', 'uploader')(req, reply);
     if (reply.sent) return;
     
     try {
@@ -74,6 +75,50 @@ export default class extends Route {
       console.log(`Downloading: ${url}`);
       const downloadResult = await downloadFromYouTube(url, videoDir);
 
+      // Process downloaded video: compress to 512MB and scale to 1080p if needed
+      const processedFilename = `processed-${path.basename(downloadResult.filename)}`;
+      const processedPath = path.join(videoDir, processedFilename);
+      
+      // Create 720p version filename
+      const filename720p = `720p-${path.basename(downloadResult.filename)}`;
+      const path720p = path.join(videoDir, filename720p);
+      
+      let finalVideoPath = downloadResult.filename;
+      let finalSize = downloadResult.size;
+      let final720pPath = null;
+      let final720pSize = null;
+
+      try {
+        console.log('Processing YouTube video...');
+        const processResult = await processVideo(downloadResult.filename, processedPath, 512);
+        
+        // Delete original and use processed
+        fs.unlinkSync(downloadResult.filename);
+        finalVideoPath = processedPath;
+        finalSize = processResult.size;
+        
+        console.log(`Video processed: ${processResult.actualSizeMB.toFixed(2)} MB`);
+      } catch (processError) {
+        console.warn('Video processing failed, using original:', processError.message);
+        if (fs.existsSync(processedPath)) {
+          fs.unlinkSync(processedPath);
+        }
+      }
+
+      // Create 720p version
+      try {
+        console.log('Creating 720p version...');
+        const result720p = await create720pVersion(finalVideoPath, path720p);
+        final720pPath = result720p.outputPath;
+        final720pSize = result720p.size;
+        console.log(`720p version created: ${result720p.actualSizeMB.toFixed(2)} MB`);
+      } catch (error720p) {
+        console.warn('720p creation failed:', error720p.message);
+        if (fs.existsSync(path720p)) {
+          fs.unlinkSync(path720p);
+        }
+      }
+
       const thumbFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
       const thumbPath = path.join(thumbDir, thumbFilename);
       
@@ -89,13 +134,16 @@ export default class extends Route {
       const video = new Video({
         title: title || downloadResult.title,
         description: description || downloadResult.description || '',
-        filename: downloadResult.filename,
+        filename: finalVideoPath,
+        filename720p: final720pPath,
         mimeType: downloadResult.mimeType,
-        size: downloadResult.size,
+        size: finalSize,
+        size720p: final720pSize,
         thumbnail: fs.existsSync(thumbPath) ? `/uploads/thumbnails/${thumbFilename}` : null,
         duration: Math.floor(downloadResult.duration || 0),
         categories: categories || [],
-        tags: tags || []
+        tags: tags || [],
+        uploader: req.user._id
       });
 
       await video.save();

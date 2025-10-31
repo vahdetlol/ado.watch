@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema({
   },
   level: {
     type: String,
-    enum: ['user', 'moderator', 'admin'],
+    enum: ['user', 'uploader', 'moderator', 'admin'],
     default: 'user'
   },
   isActive: {

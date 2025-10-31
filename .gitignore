@@ -7,7 +7,8 @@ yarn.lock
 .env
 .env.local
 .env.*.local
-
+cloudflared-config.yml
+todo
 # Logs
 logs/
 *.log

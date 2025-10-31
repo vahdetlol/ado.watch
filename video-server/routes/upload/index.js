@@ -5,7 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import Video from '../../models/Video.js';
-import { extractThumbnail, getDuration } from '../../utils/ffmpeg.js';
+import { extractThumbnail, getDuration, processVideo, create720pVersion } from '../../utils/ffmpeg.js';
 import { authenticate } from '../../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -72,6 +72,51 @@ export default class extends Route {
 
           console.log(`Video uploaded: ${req.file.originalname}`);
 
+          // Process video: compress to 512MB and scale to 1080p if needed
+          const processedFilename = `processed-${req.file.filename}`;
+          const processedPath = path.join(videoDir, processedFilename);
+          
+          // Create 720p version filename
+          const filename720p = `720p-${req.file.filename}`;
+          const path720p = path.join(videoDir, filename720p);
+          
+          let finalVideoPath = videoPath;
+          let finalSize = req.file.size;
+          let final720pPath = null;
+          let final720pSize = null;
+
+          try {
+            console.log('Starting video processing...');
+            const processResult = await processVideo(videoPath, processedPath, 512);
+            
+            // Delete original file and use processed one
+            fs.unlinkSync(videoPath);
+            finalVideoPath = processedPath;
+            finalSize = processResult.size;
+            
+            console.log(`Video processed: ${processResult.actualSizeMB.toFixed(2)} MB`);
+          } catch (processError) {
+            console.warn('Video processing failed, using original:', processError.message);
+            // If processing fails, keep original file
+            if (fs.existsSync(processedPath)) {
+              fs.unlinkSync(processedPath);
+            }
+          }
+
+          // Create 720p version
+          try {
+            console.log('Creating 720p version...');
+            const result720p = await create720pVersion(finalVideoPath, path720p);
+            final720pPath = result720p.outputPath;
+            final720pSize = result720p.size;
+            console.log(`720p version created: ${result720p.actualSizeMB.toFixed(2)} MB`);
+          } catch (error720p) {
+            console.warn('720p creation failed:', error720p.message);
+            if (fs.existsSync(path720p)) {
+              fs.unlinkSync(path720p);
+            }
+          }
+
           const thumbFilename = `${path.parse(req.file.filename).name}.jpg`;
           const thumbPath = path.join(thumbDir, thumbFilename);
 
@@ -79,11 +124,11 @@ export default class extends Route {
           let duration = 0;
 
           try {
-            await extractThumbnail(videoPath, thumbPath);
+            await extractThumbnail(finalVideoPath, thumbPath);
             thumbnailUrl = `/uploads/thumbnails/${thumbFilename}`;
             console.log(`Thumbnail created: ${thumbFilename}`);
 
-            duration = await getDuration(videoPath);
+            duration = await getDuration(finalVideoPath);
             console.log(`Duration: ${duration}s`);
           } catch (ffmpegError) {
             console.warn('FFmpeg error:', ffmpegError.message);
@@ -92,13 +137,16 @@ export default class extends Route {
           const video = new Video({
             title: title || req.file.originalname,
             description: description || '',
-            filename: videoPath,
+            filename: finalVideoPath,
+            filename720p: final720pPath,
             mimeType: req.file.mimetype,
-            size: req.file.size,
+            size: finalSize,
+            size720p: final720pSize,
             thumbnail: thumbnailUrl,
             duration: Math.floor(duration),
             categories: categories ? JSON.parse(categories) : [],
-            tags: tags ? JSON.parse(tags) : []
+            tags: tags ? JSON.parse(tags) : [],
+            uploader: req.user._id
           });
 
           await video.save();
