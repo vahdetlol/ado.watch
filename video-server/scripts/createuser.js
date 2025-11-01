@@ -55,7 +55,7 @@ async function createuser() {
     console.log(`Active: ${user.isActive}`);
 
   } catch (error) {
-    console.error('\n❌ Error:', error.message);
+    console.error('\n Error:', error.message);
   } finally {
     rl.close();
     await mongoose.connection.close();

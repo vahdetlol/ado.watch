@@ -31,7 +31,7 @@ const initializeB2 = async () => {
     console.log(' Backblaze B2 authorized successfully');
     return { b2: b2Client, auth: authData };
   } catch (error) {
-    console.error('❌ Backblaze B2 authorization failed:', error);
+    console.error(' Backblaze B2 authorization failed:', error);
     throw new Error(`B2 authorization failed: ${error.message}`);
   }
 };
@@ -87,7 +87,7 @@ const uploadToB2 = async (localFilePath, b2FileName, bucketId = null) => {
       size: uploadResponse.data.contentLength,
     };
   } catch (error) {
-    console.error('❌ B2 upload error:', error);
+    console.error(' B2 upload error:', error);
     throw new Error(`B2 upload failed: ${error.message}`);
   }
 };
@@ -116,7 +116,7 @@ const deleteFromB2 = async (fileId, fileName) => {
       message: 'File deleted successfully',
     };
   } catch (error) {
-    console.error('❌ B2 delete error:', error);
+    console.error(' B2 delete error:', error);
     throw new Error(`B2 delete failed: ${error.message}`);
   }
 };
@@ -157,7 +157,7 @@ const uploadVideoToB2 = async (videoPath, thumbnailPath = null) => {
 
     return results;
   } catch (error) {
-    console.error('❌ Video upload to B2 failed:', error);
+    console.error(' Video upload to B2 failed:', error);
     throw error;
   }
 };
@@ -203,7 +203,7 @@ const uploadMultipleVersionsToB2 = async (videoPath, video720pPath = null, thumb
 
     return results;
   } catch (error) {
-    console.error('❌ Multiple versions upload to B2 failed:', error);
+    console.error(' Multiple versions upload to B2 failed:', error);
     throw error;
   }
 };
@@ -223,7 +223,7 @@ const getFileInfo = async (fileId) => {
 
     return response.data;
   } catch (error) {
-    console.error('❌ B2 get file info error:', error);
+    console.error(' B2 get file info error:', error);
     throw new Error(`B2 get file info failed: ${error.message}`);
   }
 };

@@ -21,7 +21,7 @@ export const extractThumbnail = (inputPath, outputPath) => {
         timestamps: ['00:00:01'],
         filename: path.basename(outputPath),
         folder: path.dirname(outputPath),
-        size: '320x240'
+        size: '1920x1080'
       })
       .on('end', () => resolve(outputPath))
       .on('error', (err) => reject(err));

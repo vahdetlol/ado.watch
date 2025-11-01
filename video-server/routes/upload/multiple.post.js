@@ -193,7 +193,7 @@ export default class extends Route {
               console.log(`Saved: ${video.title}`);
 
             } catch (error) {
-              console.error(`❌ Failed: ${file.originalname}`, error.message);
+              console.error(` Failed: ${file.originalname}`, error.message);
               failedVideos.push({
                 filename: file.originalname,
                 error: error.message

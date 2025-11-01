@@ -71,7 +71,7 @@ export const recordLoginAttempt = async (req, success) => {
       const failedAttempts = await LoginAttempt.getRecentFailedAttempts(ip, identifier, 15);
       const remainingAttempts = Math.max(0, 5 - failedAttempts);
       
-      console.log(`❌ Failed login attempt recorded`);
+      console.log(` Failed login attempt recorded`);
       console.log(`   IP: ${ip}`);
       console.log(`   User: ${identifier}`);
       console.log(`   Total failed: ${failedAttempts}/5`);

@@ -91,8 +91,7 @@ export default class extends Route {
         // First, get original video info to determine resolution
         const { getVideoInfo } = await import('../../utils/ffmpeg.js');
         const videoInfo = await getVideoInfo(downloadResult.filename);
-        videoHeight = videoInfo.height;
-        
+        const videoHeight = videoInfo.height;
         // Process downloaded video: compress to 512MB and scale to 1080p if needed
         const processedFilename = `${fileBaseName}-${videoHeight}p${fileExt}`;
         const processedPath = path.join(videoDir, processedFilename);

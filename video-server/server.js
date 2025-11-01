@@ -60,7 +60,7 @@ const { err, address } = await server.start({
 });
 
 if (err) {
-  console.error('❌ Server start error:', err);
+  console.error(' Server start error:', err);
   process.exit(1);
 }
 

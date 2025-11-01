@@ -14,7 +14,7 @@ export default class extends Route {
       // Generate new token
       const token = jwt.sign(
         { userId: req.user._id, level: req.user.level },
-        process.env.JWT_SECRET || 'your-secret-key-change-this',
+        process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
 

@@ -36,7 +36,6 @@ export default class extends Route {
       username,
       email,
       password,
-      // Only allow setting level if provided and not 'admin' (admins must be created manually)
       level: level && level !== 'admin' ? level : 'user'
     });
 
@@ -45,7 +44,7 @@ export default class extends Route {
     // Generate token
     const token = jwt.sign(
       { userId: user._id, level: user.level },
-      process.env.JWT_SECRET || 'your-secret-key-change-this',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
