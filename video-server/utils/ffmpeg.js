@@ -84,10 +84,27 @@ export const processVideo = (inputPath, outputPath, targetSizeMB = 512) => {
         const height = videoStream?.height || 0;
         const width = videoStream?.width || 0;
 
-        console.log(`Processing video: ${width}x${height}, duration: ${duration}s`);
+        // Check input file size
+        const inputStats = fs.statSync(inputPath);
+        const inputSizeMB = inputStats.size / (1024 * 1024);
 
-        // Calculate bitrate for target size
-        // Formula: (targetSizeMB * 8192) / duration - audioBitrate
+        console.log(`Processing video: ${width}x${height}, duration: ${duration}s, size: ${inputSizeMB.toFixed(2)}MB`);
+
+        // Skip processing if video is already smaller than target
+        if (inputSizeMB <= targetSizeMB) {
+          console.log(`Video is already smaller than ${targetSizeMB}MB, skipping processing.`);
+          return resolve({
+            success: true,
+            outputPath: inputPath,
+            size: inputStats.size,
+            targetSizeMB,
+            actualSizeMB: inputSizeMB,
+            skipped: true,
+            height: height,
+            width: width
+          });
+        }
+
         const audioBitrate = 128; // kbps
         const targetTotalBitrate = Math.floor((targetSizeMB * 8192) / duration);
         const targetVideoBitrate = targetTotalBitrate - audioBitrate;
@@ -124,15 +141,18 @@ export const processVideo = (inputPath, outputPath, targetSizeMB = 512) => {
             }
           })
           .on('end', () => {
-            // Get output file stats
+            // Get output file stats and determine final resolution
             const stats = fs.statSync(outputPath);
-            console.log(`✓ Video processed: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
+            const finalHeight = height > 1080 ? 1080 : height;
+            console.log(`Video processed: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
             resolve({
               success: true,
               outputPath,
               size: stats.size,
               targetSizeMB,
-              actualSizeMB: stats.size / (1024 * 1024)
+              actualSizeMB: stats.size / (1024 * 1024),
+              height: finalHeight,
+              width: height > 1080 ? Math.round((width * 1080) / height) : width
             });
           })
           .on('error', (err) => {
@@ -163,15 +183,25 @@ export const create720pVersion = (inputPath, outputPath) => {
         const videoStream = metadata.streams.find(s => s.codec_type === 'video');
         const duration = metadata.format.duration;
         const height = videoStream?.height || 0;
-
-        console.log(`Creating 720p version (original: ${height}p)`);
-
         // Calculate appropriate bitrate for 720p
         // Targeting roughly 256MB for 720p version
         const audioBitrate = 128; // kbps
         const targetSizeMB = 256;
         const targetTotalBitrate = Math.floor((targetSizeMB * 8192) / duration);
         const targetVideoBitrate = targetTotalBitrate - audioBitrate;
+
+        if (height <= 720) {
+          console.log('Original video is 720p or lower, skipping 720p creation.');
+          return resolve({
+            success: true,
+            outputPath,
+            size: 0,
+            actualSizeMB: 0
+          });
+        }
+        else {
+
+          console.log(`Creating 720p version (original: ${height}p)`);
 
         ffmpeg(inputPath)
           .videoCodec('libx264')
@@ -194,7 +224,7 @@ export const create720pVersion = (inputPath, outputPath) => {
           })
           .on('end', () => {
             const stats = fs.statSync(outputPath);
-            console.log(`✓ 720p version created: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
+            console.log(`720p version created: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
             resolve({
               success: true,
               outputPath,
@@ -207,6 +237,7 @@ export const create720pVersion = (inputPath, outputPath) => {
             reject(err);
           })
           .run();
+        }
 
       } catch (parseErr) {
         reject(parseErr);

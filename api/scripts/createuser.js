@@ -47,7 +47,7 @@ async function createAdmin() {
 
     await user.save();
 
-    console.log('\n✅ User created successfully!');
+    console.log('\n User created successfully!');
     console.log(`\nUser ID: ${user._id}`);
     console.log(`Username: ${user.username}`);
     console.log(`Email: ${user.email}`);

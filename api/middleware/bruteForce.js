@@ -64,7 +64,7 @@ export const recordLoginAttempt = async (req, success) => {
 
     if (success) {
       await LoginAttempt.clearAttempts(ip, identifier);
-      console.log(`✅ Successful login - brute force records cleared`);
+      console.log(` Successful login - brute force records cleared`);
       console.log(`   IP: ${ip}`);
       console.log(`   User: ${identifier}`);
     } else {

@@ -69,5 +69,5 @@ export async function registerSecurityMiddleware(app) {
     }
   });
 
-  console.log('✅ Security middleware registered');
+  console.log(' Security middleware registered');
 }

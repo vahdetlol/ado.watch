@@ -74,5 +74,5 @@ export function registerXSSProtection(app) {
     }
   });
   
-  console.log('✅ XSS Protection middleware registered');
+  console.log(' XSS Protection middleware registered');
 }

@@ -89,47 +89,70 @@ export default class extends Route {
         }
 
         try {
-          // Process video: compress to 512MB and scale to 1080p if needed
-          const processedFilename = `processed-${path.basename(videoData.filename)}`;
-          const processedPath = path.join(videoDir, processedFilename);
-          
-          // Create 720p version filename
-          const filename720p = `720p-${path.basename(videoData.filename)}`;
-          const path720p = path.join(videoDir, filename720p);
+          const fileBaseName = path.parse(path.basename(videoData.filename)).name;
+          const fileExt = path.parse(path.basename(videoData.filename)).ext;
           
           let finalVideoPath = videoData.filename;
           let finalSize = videoData.size;
           let final720pPath = null;
           let final720pSize = null;
+          let videoHeight = null;
 
           try {
             console.log(`Processing: ${videoData.title}`);
+            
+            // First, get original video info to determine resolution
+            const { getVideoInfo } = await import('../../../utils/ffmpeg.js');
+            const videoInfo = await getVideoInfo(videoData.filename);
+            videoHeight = videoInfo.height;
+            
+            // Process video: compress to 512MB and scale to 1080p if needed
+            const processedFilename = `${fileBaseName}-${videoHeight}p${fileExt}`;
+            const processedPath = path.join(videoDir, processedFilename);
+            
             const processResult = await processVideo(videoData.filename, processedPath, 512);
             
-            // Delete original and use processed
-            fs.unlinkSync(videoData.filename);
-            finalVideoPath = processedPath;
+            // Use the actual height from processing result
+            videoHeight = processResult.height;
+            
+            // Rename file with correct resolution if needed
+            const correctFilename = `${fileBaseName}-${videoHeight}p${fileExt}`;
+            const correctPath = path.join(videoDir, correctFilename);
+            
+            if (processedPath !== correctPath && fs.existsSync(processedPath)) {
+              fs.renameSync(processedPath, correctPath);
+              finalVideoPath = correctPath;
+            } else {
+              finalVideoPath = processResult.outputPath;
+            }
+            
+            // Delete original if different from final
+            if (fs.existsSync(videoData.filename) && videoData.filename !== finalVideoPath) {
+              fs.unlinkSync(videoData.filename);
+            }
+            
             finalSize = processResult.size;
             
-            console.log(`Processed: ${processResult.actualSizeMB.toFixed(2)} MB`);
+            console.log(`Processed: ${processResult.actualSizeMB.toFixed(2)} MB at ${videoHeight}p`);
           } catch (processError) {
             console.warn('Processing failed, using original:', processError.message);
-            if (fs.existsSync(processedPath)) {
-              fs.unlinkSync(processedPath);
-            }
+            // Keep original file
+            finalVideoPath = videoData.filename;
           }
 
-          // Create 720p version
-          try {
-            console.log('Creating 720p version...');
-            const result720p = await create720pVersion(finalVideoPath, path720p);
-            final720pPath = result720p.outputPath;
-            final720pSize = result720p.size;
-            console.log(`720p: ${result720p.actualSizeMB.toFixed(2)} MB`);
-          } catch (error720p) {
-            console.warn('720p creation failed:', error720p.message);
-            if (fs.existsSync(path720p)) {
-              fs.unlinkSync(path720p);
+          // Create 720p version only if original is higher than 720p
+          if (videoHeight && videoHeight > 720) {
+            try {
+              const filename720p = `${fileBaseName}-720p${fileExt}`;
+              const path720p = path.join(videoDir, filename720p);
+              
+              console.log('Creating 720p version...');
+              const result720p = await create720pVersion(finalVideoPath, path720p);
+              final720pPath = result720p.outputPath;
+              final720pSize = result720p.size;
+              console.log(`720p: ${result720p.actualSizeMB.toFixed(2)} MB`);
+            } catch (error720p) {
+              console.warn('720p creation failed:', error720p.message);
             }
           }
 

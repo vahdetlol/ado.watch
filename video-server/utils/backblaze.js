@@ -28,7 +28,7 @@ const initializeB2 = async () => {
 
   try {
     authData = await b2Client.authorize();
-    console.log('✅ Backblaze B2 authorized successfully');
+    console.log(' Backblaze B2 authorized successfully');
     return { b2: b2Client, auth: authData };
   } catch (error) {
     console.error('❌ Backblaze B2 authorization failed:', error);
@@ -61,7 +61,7 @@ const uploadToB2 = async (localFilePath, b2FileName, bucketId = null) => {
     const fileData = fs.readFileSync(localFilePath);
     const fileName = b2FileName || path.basename(localFilePath);
 
-    console.log(`📤 Uploading to B2: ${fileName}`);
+    console.log(` Uploading to B2: ${fileName}`);
 
     // Upload file
     const uploadResponse = await b2.uploadFile({
@@ -71,7 +71,7 @@ const uploadToB2 = async (localFilePath, b2FileName, bucketId = null) => {
       data: fileData,
     });
 
-    console.log(`✅ Upload successful: ${fileName}`);
+    console.log(` Upload successful: ${fileName}`);
 
     // Generate file URL
     const bucketName = process.env.B2_BUCKET_NAME;
@@ -102,14 +102,14 @@ const deleteFromB2 = async (fileId, fileName) => {
   try {
     const { b2 } = await initializeB2();
 
-    console.log(`🗑️ Deleting from B2: ${fileName}`);
+    console.log(` Deleting from B2: ${fileName}`);
 
     await b2.deleteFileVersion({
       fileId: fileId,
       fileName: fileName,
     });
 
-    console.log(`✅ Delete successful: ${fileName}`);
+    console.log(` Delete successful: ${fileName}`);
 
     return {
       success: true,
@@ -142,7 +142,7 @@ const uploadVideoToB2 = async (videoPath, thumbnailPath = null) => {
       
       // Delete local video file after successful upload
       fs.unlinkSync(videoPath);
-      console.log(`🗑️ Local video deleted: ${videoPath}`);
+      console.log(` Local video deleted: ${videoPath}`);
     }
 
     // Upload thumbnail if exists
@@ -152,7 +152,7 @@ const uploadVideoToB2 = async (videoPath, thumbnailPath = null) => {
       
       // Delete local thumbnail file after successful upload
       fs.unlinkSync(thumbnailPath);
-      console.log(`🗑️ Local thumbnail deleted: ${thumbnailPath}`);
+      console.log(` Local thumbnail deleted: ${thumbnailPath}`);
     }
 
     return results;
@@ -182,7 +182,7 @@ const uploadMultipleVersionsToB2 = async (videoPath, video720pPath = null, thumb
       const videoFileName = `videos/${path.basename(videoPath)}`;
       results.video = await uploadToB2(videoPath, videoFileName);
       fs.unlinkSync(videoPath);
-      console.log(`🗑️ Local video deleted: ${videoPath}`);
+      console.log(` Local video deleted: ${videoPath}`);
     }
 
     // Upload 720p version
@@ -190,7 +190,7 @@ const uploadMultipleVersionsToB2 = async (videoPath, video720pPath = null, thumb
       const video720pFileName = `videos/${path.basename(video720pPath)}`;
       results.video720p = await uploadToB2(video720pPath, video720pFileName);
       fs.unlinkSync(video720pPath);
-      console.log(`🗑️ Local 720p video deleted: ${video720pPath}`);
+      console.log(` Local 720p video deleted: ${video720pPath}`);
     }
 
     // Upload thumbnail
@@ -198,7 +198,7 @@ const uploadMultipleVersionsToB2 = async (videoPath, video720pPath = null, thumb
       const thumbFileName = `thumbnails/${path.basename(thumbnailPath)}`;
       results.thumbnail = await uploadToB2(thumbnailPath, thumbFileName);
       fs.unlinkSync(thumbnailPath);
-      console.log(`🗑️ Local thumbnail deleted: ${thumbnailPath}`);
+      console.log(` Local thumbnail deleted: ${thumbnailPath}`);
     }
 
     return results;

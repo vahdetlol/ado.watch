@@ -164,7 +164,7 @@ export default class extends Route {
 
           await video.save();
 
-          console.log(`✅ Video saved to DB: ${video.title}`);
+          console.log(` Video saved to DB: ${video.title}`);
 
           reply.status(201).send({
             success: true,

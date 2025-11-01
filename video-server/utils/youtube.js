@@ -48,7 +48,7 @@ const downloadFromYouTube = async (url, outputDir, isPlaylist = false) => {
       noPlaylist: !isPlaylist,
     });
 
-    console.log(`🔍 Searching for downloaded file...`);
+    console.log(` Searching for downloaded file...`);
     
   // After downloading, find new files
     const currentFiles = fs.readdirSync(outputDir);
