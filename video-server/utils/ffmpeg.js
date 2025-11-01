@@ -1,10 +1,12 @@
 import ffmpeg from 'fluent-ffmpeg';
 import { path as ffmpegPath } from '@ffmpeg-installer/ffmpeg';
+import { path as ffprobePath } from '@ffprobe-installer/ffprobe';
 import path from 'path';
 import fs from 'fs';
 
 // Set FFmpeg binary path
 ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 /**
  * Create a thumbnail from a video (first frame)
