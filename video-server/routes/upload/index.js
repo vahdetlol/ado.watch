@@ -5,14 +5,13 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import Video from '../../models/Video.js';
-import { extractThumbnail, getDuration, processVideo, create720pVersion } from '../../utils/ffmpeg.js';
+import { extractThumbnail, getDuration, getVideoInfo, create720pVersion } from '../../utils/ffmpeg.js';
 import { authenticate } from '../../middleware/auth.js';
-import { uploadMultipleVersionsToB2 } from '../../utils/backblaze.js';
+import { uploadAllResolutionsToB2 } from '../../utils/backblaze.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Uploads folder in the main project directory
 const videoDir = path.join(__dirname, '..', '..', 'uploads', 'videos');
 const thumbDir = path.join(__dirname, '..', '..', 'uploads', 'thumbnails');
 
@@ -47,14 +46,11 @@ const upload = multer({
   }
 });
 
-// POST /api/upload - Upload video (Authenticated users)
 export default class extends Route {
   async handle(req, reply) {
-    // Check authentication first
     await authenticate(req, reply);
     if (reply.sent) return;
     
-    // Then handle file upload
     return new Promise((resolve) => {
       upload.single('video')(req, reply, async (err) => {
         if (err) {
@@ -73,98 +69,95 @@ export default class extends Route {
 
           console.log(`Video uploaded: ${req.file.originalname}`);
 
-          // Process video: compress to 512MB and scale to 1080p if needed
-          const processedFilename = `processed-${req.file.filename}`;
-          const processedPath = path.join(videoDir, processedFilename);
+          const videoInfo = await getVideoInfo(videoPath);
+          const videoHeight = videoInfo.height;
+          const videoWidth = videoInfo.width;
           
-          // Create 720p version filename
-          const filename720p = `720p-${req.file.filename}`;
-          const path720p = path.join(videoDir, filename720p);
-          
-          let finalVideoPath = videoPath;
-          let finalSize = req.file.size;
-          let final720pPath = null;
-          let final720pSize = null;
+          console.log(`Original video resolution: ${videoWidth}x${videoHeight}`);
+          const videoVersions = [];
+          const originalResolution = `${videoHeight}p`;
+          videoVersions.push({
+            filename: videoPath,
+            resolution: originalResolution,
+            height: videoHeight,
+            width: videoWidth,
+            size: req.file.size,
+            isOriginal: true
+          });
 
-          try {
-            console.log('Starting video processing...');
-            const processResult = await processVideo(videoPath, processedPath, 512);
+          let path720p = null;
+          if (videoHeight > 720) {
+            const filename720p = `720p-${req.file.filename}`;
+            path720p = path.join(videoDir, filename720p);
             
-            // Delete original file and use processed one
-            fs.unlinkSync(videoPath);
-            finalVideoPath = processedPath;
-            finalSize = processResult.size;
-            
-            console.log(`Video processed: ${processResult.actualSizeMB.toFixed(2)} MB`);
-          } catch (processError) {
-            console.warn('Video processing failed, using original:', processError.message);
-            // If processing fails, keep original file
-            if (fs.existsSync(processedPath)) {
-              fs.unlinkSync(processedPath);
+            try {
+              console.log('Creating 720p version...');
+              const result720p = await create720pVersion(videoPath, path720p);
+              
+              if (result720p.size > 0) {
+                videoVersions.push({
+                  filename: path720p,
+                  resolution: '720p',
+                  height: 720,
+                  width: Math.round((videoWidth * 720) / videoHeight),
+                  size: result720p.size,
+                  isOriginal: false
+                });
+                console.log(`720p version created: ${result720p.actualSizeMB.toFixed(2)} MB`);
+              }
+            } catch (error720p) {
+              console.warn('720p creation failed:', error720p.message);
+              if (fs.existsSync(path720p)) {
+                fs.unlinkSync(path720p);
+              }
             }
-          }
-
-          // Create 720p version
-          try {
-            console.log('Creating 720p version...');
-            const result720p = await create720pVersion(finalVideoPath, path720p);
-            final720pPath = result720p.outputPath;
-            final720pSize = result720p.size;
-            console.log(`720p version created: ${result720p.actualSizeMB.toFixed(2)} MB`);
-          } catch (error720p) {
-            console.warn('720p creation failed:', error720p.message);
-            if (fs.existsSync(path720p)) {
-              fs.unlinkSync(path720p);
-            }
+          } else {
+            console.log('Video is 720p or lower, skipping 720p creation');
           }
 
           const thumbFilename = `${path.parse(req.file.filename).name}.jpg`;
           const thumbPath = path.join(thumbDir, thumbFilename);
 
-          let thumbnailUrl = null;
           let duration = 0;
 
           try {
-            await extractThumbnail(finalVideoPath, thumbPath);
-            thumbnailUrl = `/uploads/thumbnails/${thumbFilename}`;
+            await extractThumbnail(videoPath, thumbPath);
             console.log(`Thumbnail created: ${thumbFilename}`);
 
-            duration = await getDuration(finalVideoPath);
+            duration = await getDuration(videoPath);
             console.log(`Duration: ${duration}s`);
           } catch (ffmpegError) {
             console.warn('FFmpeg error:', ffmpegError.message);
           }
 
-          // Upload to Backblaze B2
-          console.log('Uploading to Backblaze B2...');
-          const b2Results = await uploadMultipleVersionsToB2(
-            finalVideoPath,
-            final720pPath,
+          console.log(`Uploading ${videoVersions.length} version(s) to Backblaze B2...`);
+          const b2Results = await uploadAllResolutionsToB2(
+            videoVersions,
             fs.existsSync(thumbPath) ? thumbPath : null
           );
 
           const video = new Video({
             title: title || req.file.originalname,
             description: description || '',
-            url1: b2Results.video?.fileUrl || null,
-            url2: b2Results.video720p?.fileUrl || null,
+            resolutions: b2Results.resolutions.map(res => ({
+              resolution: res.resolution,
+              url: res.fileUrl,
+              size: res.size,
+              width: res.width,
+              height: res.height,
+              b2FileId: res.fileId
+            })),
             mimeType: req.file.mimetype,
-            size1: finalSize,
-            size2: final720pSize,
             thumbnail: b2Results.thumbnail?.fileUrl || null,
             duration: Math.floor(duration),
             categories: categories ? JSON.parse(categories) : [],
             tags: tags ? JSON.parse(tags) : [],
             uploader: req.user._id,
-            // Store B2 file IDs for future reference
-            b2FileId: b2Results.video?.fileId,
-            b2FileId720p: b2Results.video720p?.fileId,
-            b2ThumbnailId: b2Results.thumbnail?.fileId,
           });
 
           await video.save();
 
-          console.log(` Video saved to DB: ${video.title}`);
+          console.log(`✓ Video saved to DB with ${videoVersions.length} resolution(s): ${video.title}`);
 
           reply.status(201).send({
             success: true,
@@ -174,7 +167,10 @@ export default class extends Route {
               description: video.description,
               thumbnail: video.thumbnail,
               duration: video.duration,
-              size: video.size,
+              resolutions: video.resolutions.map(r => ({
+                resolution: r.resolution,
+                size: r.size
+              })),
               mimeType: video.mimeType
             }
           });
