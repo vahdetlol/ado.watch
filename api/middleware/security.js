@@ -1,6 +1,4 @@
-import fastifyHelmet from '@fastify/helmet';
-import mongoSanitize from 'express-mongo-sanitize';
-import hpp from 'hpp';
+import fastifyHelmet from "@fastify/helmet";
 
 /**
  * Security middleware configuration
@@ -16,46 +14,63 @@ export async function registerSecurityMiddleware(app) {
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         fontSrc: ["'self'", "data:"],
-        connectSrc: ["'self'"]
-      }
+        mediaSrc: ["'self'", "blob:", "https:"],
+        connectSrc: ["'self'"],
+      },
     },
-    crossOriginEmbedderPolicy: false, // Disable for better compatibility
+    crossOriginEmbedderPolicy: false,
     hsts: {
       maxAge: 31536000,
       includeSubDomains: true,
-      preload: true
+      preload: true,
     },
     frameguard: {
-      action: 'sameorigin'
+      action: "sameorigin",
     },
     referrerPolicy: {
-      policy: 'strict-origin-when-cross-origin'
-    }
+      policy: "strict-origin-when-cross-origin",
+    },
   });
 
   // MongoDB injection prevention
-  app.addHook('preValidation', async (request, reply) => {
+  app.addHook("preValidation", async (request, reply) => {
+    const sanitizeObject = (obj) => {
+      if (!obj || typeof obj !== "object") return obj;
+
+      const sanitized = Array.isArray(obj) ? [] : {};
+
+      for (const key in obj) {
+        // Remove keys starting with $ or containing .
+        if (key.startsWith("$") || key.includes(".")) {
+          continue;
+        }
+
+        const value = obj[key];
+
+        if (value && typeof value === "object") {
+          sanitized[key] = sanitizeObject(value);
+        } else {
+          sanitized[key] = value;
+        }
+      }
+
+      return sanitized;
+    };
+
     if (request.body) {
-      request.body = mongoSanitize.sanitize(request.body, {
-        replaceWith: '_'
-      });
+      request.body = sanitizeObject(request.body);
     }
     if (request.query) {
-      request.query = mongoSanitize.sanitize(request.query, {
-        replaceWith: '_'
-      });
+      request.query = sanitizeObject(request.query);
     }
     if (request.params) {
-      request.params = mongoSanitize.sanitize(request.params, {
-        replaceWith: '_'
-      });
+      request.params = sanitizeObject(request.params);
     }
   });
 
   // HTTP Parameter Pollution protection
-  app.addHook('preValidation', async (request, reply) => {
+  app.addHook("preValidation", async (request, reply) => {
     if (request.query) {
-      // Protect against duplicate query parameters
       const cleanQuery = {};
       for (const key in request.query) {
         if (Array.isArray(request.query[key])) {
@@ -69,5 +84,5 @@ export async function registerSecurityMiddleware(app) {
     }
   });
 
-  console.log(' Security middleware registered');
+  console.log("Security middleware registered");
 }

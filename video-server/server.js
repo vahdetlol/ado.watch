@@ -1,14 +1,14 @@
-import 'dotenv/config';
-import { Oweb } from 'owebjs';
+import "dotenv/config";
+import { Oweb } from "owebjs";
 import mongoose from "mongoose";
 import path from "path";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import fastifyStatic from '@fastify/static';
-import fastifyCors from '@fastify/cors';
-import { registerGlobalRateLimit } from './middleware/rateLimiter.js';
-import { registerSecurityMiddleware } from './middleware/security.js';
-import { registerXSSProtection } from './middleware/xss.js';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import fastifyStatic from "@fastify/static";
+import fastifyCors from "@fastify/cors";
+import { registerGlobalRateLimit } from "./middleware/rateLimiter.js";
+import { registerSecurityMiddleware } from "./middleware/security.js";
+import { registerXSSProtection } from "./middleware/xss.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,11 +27,15 @@ const app = new Oweb();
 const server = await app.setup();
 
 await server.register(fastifyCors, {
-  origin: '*'
+  origin: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : [],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
 });
 
 // Register security middleware
-registerSecurityMiddleware(server);
+await registerSecurityMiddleware(server);
 
 // Register XSS protection
 registerXSSProtection(server);
@@ -41,26 +45,26 @@ registerGlobalRateLimit(server);
 
 // Static files (uploaded videos and thumbnails)
 await server.register(fastifyStatic, {
-  root: path.join(__dirname, 'uploads'),
-  prefix: '/uploads/'
+  root: path.join(__dirname, "uploads"),
+  prefix: "/uploads/",
 });
 
 // Load routes
 await server.loadRoutes({
-  directory: './routes',
+  directory: "./routes",
   hmr: {
-    enabled: process.env.NODE_ENV !== 'production'
-  }
+    enabled: process.env.NODE_ENV !== "production",
+  },
 });
 
 // Start server
 const { err, address } = await server.start({
   port: parseInt(process.env.PORT) || 5001,
-  host: '127.0.0.1'
+  host: "127.0.0.1",
 });
 
 if (err) {
-  console.error(' Server start error:', err);
+  console.error(" Server start error:", err);
   process.exit(1);
 }
 
