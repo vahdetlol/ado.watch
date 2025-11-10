@@ -16,7 +16,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.1",
     "nodejs-snowflake": "^2.0.1",
-    "owebjs": "^1.4.2"
+    "owebjs": "^1.4.2",
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

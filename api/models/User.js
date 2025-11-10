@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import zxcvbn from 'zxcvbn';
 import { getNow } from '../utils/timezone.js';
 
 // Simple unique ID generator
@@ -34,7 +35,17 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters']
+    minlength: [8, 'Password must be at least 8 characters'],
+    validate: {
+      validator: function(password) {
+        if (this.isModified('password') && !password.startsWith('$2a$')) {
+          const result = zxcvbn(password);
+          return result.score >= 2;
+        }
+        return true;
+      },
+      message: 'Password is too weak. Please use a stronger password with a mix of letters, numbers, and symbols.'
+    }
   },
   level: {
     type: String,
