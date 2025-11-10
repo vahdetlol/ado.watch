@@ -21,6 +21,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.1",
+    "multer": "^2.0.2",
     "nodejs-snowflake": "^2.0.1",
     "owebjs": "^1.4.2"
   },
