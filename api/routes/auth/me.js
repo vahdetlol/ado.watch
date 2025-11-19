@@ -6,15 +6,16 @@ import { authenticate } from '../../middleware/auth.js';
  * Get current user profile
  */
 export default class extends Route {
-  middleware = [authenticate];
-
   async handle(req, res) {
+    await authenticate(req, res);
+    if (res.sent) return;
+
     try {
+      const userData = req.user.toJSON ? req.user.toJSON() : req.user;
+      
       res.send({
         success: true,
-        data: {
-          user: req.user
-        }
+        data: userData
       });
     } catch (error) {
       res.status(500).send({

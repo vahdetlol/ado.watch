@@ -19,7 +19,18 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+mongoose.connection.on("disconnected", () => {
+  console.error("MongoDB disconnected! Attempting to reconnect...");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB error:", err);
+});
 
 // Create and setup the app
 const app = await new Oweb().setup();

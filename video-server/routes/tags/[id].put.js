@@ -1,11 +1,8 @@
 import { Route } from 'owebjs';
 import Tag from '../../models/tag.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
 
-// PUT /api/tags/:id - Update tag (Admin or Moderator)
+// PUT /tags/:id - Update tag
 export default class extends Route {
-  middleware = [authenticate, authorize('admin', 'moderator')];
-
   async handle(req, res) {
   try {
     const { name, slug } = req.body;

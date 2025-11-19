@@ -7,7 +7,6 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import Video from "../../models/Video.js";
 import { downloadAllResolutions, isYouTubeUrl } from "../../utils/youtube.js";
-import { authenticate, authorize } from "../../middleware/auth.js";
 import { uploadAllResolutionsToB2 } from "../../utils/backblaze.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,17 +52,15 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
 
 export default class extends Route {
   async handle(req, reply) {
-    await authenticate(req, reply);
-    if (reply.sent) return;
-
-    await authorize("admin", "moderator", "uploader")(req, reply);
-    if (reply.sent) return;
-
     try {
-      const { url, title, description, categories, tags } = req.body;
+      const { url, title, description, categories, tags, _user } = req.body;
 
       if (!url) {
         return reply.status(400).send({ error: "YouTube URL is required" });
+      }
+
+      if (!_user || !_user._id) {
+        return reply.status(401).send({ error: "Authentication required" });
       }
 
       if (!isYouTubeUrl(url)) {
@@ -122,7 +119,7 @@ export default class extends Route {
         duration: Math.floor(downloadResult.duration || 0),
         categories: categories || [],
         tags: tags || [],
-        uploader: req.user._id,
+        uploader: _user._id,
       });
 
       await video.save();
@@ -130,7 +127,7 @@ export default class extends Route {
       console.log(
         `Video saved with ${b2Results.resolutions.length} resolutions: ${video.title}`
       );
-      console.log("Youtube video downloaded by ", req.user.username);
+      console.log("Youtube video downloaded by ", _user.username);
 
       return reply.status(201).send({
         success: true,

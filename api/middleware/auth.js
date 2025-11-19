@@ -7,7 +7,6 @@ import User from '../models/User.js';
  */
 export const authenticate = async (req, res) => {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,11 +20,9 @@ export const authenticate = async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-
-    // Verify token
+    
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Get user from database
     const user = await User.findById(decoded.userId);
     
     if (!user) {
@@ -48,9 +45,10 @@ export const authenticate = async (req, res) => {
       });
     }
 
-    // Attach user to request
     req.user = user;
     console.log(`User authenticated: ${user.username} [${user.level}]`);
+    
+    return;
     
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
@@ -73,7 +71,6 @@ export const authenticate = async (req, res) => {
       });
     }
 
-    console.error('Auth error:', error);
     return res.status(500).send({
       success: false,
       message: 'Authentication error',
@@ -111,6 +108,7 @@ export const authorize = (...allowedLevels) => {
       }
 
       console.log(`Auth granted: ${req.user.username} [${req.user.level}]`);
+      return;
 
     } catch (error) {
       console.error('Auth error:', error);
@@ -140,7 +138,9 @@ export const optionalAuth = async (req, res) => {
         req.user = user;
       }
     }
+    return;    
   } catch (error) {
     // Silently fail - this is optional auth
+    return;
   }
 };

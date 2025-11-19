@@ -1,7 +1,7 @@
 import { Route } from 'owebjs';
 import Category from '../../models/category.js';
 
-// GET /api/categories/:id - Get a single category
+// GET /categories/:id - Get a single category
 export default class extends Route {
   async handle(req, res) {
     try {

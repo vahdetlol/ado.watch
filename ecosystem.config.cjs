@@ -7,7 +7,7 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       watch: false,
-      max_memory_restart: '500M',
+      max_memory_restart: '1G',
       env: {
         NODE_ENV: 'development',
         PORT: 5000
@@ -33,7 +33,7 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       watch: false,
-      max_memory_restart: '1G',
+      max_memory_restart: '3G',
       env: {
         NODE_ENV: 'development',
         PORT: 5001

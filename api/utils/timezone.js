@@ -1,5 +1,4 @@
-
-const GMT_OFFSET = 3; // GMT+3
+const GMT_OFFSET = 3;
 
 export const getNow = () => {
   const date = new Date();
@@ -16,7 +15,7 @@ export const toGMT3 = (date) => {
 export const formatDate = (date) => {
   if (!date) return null;
   const d = toGMT3(date);
-  return d.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' });
+  return d.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' });
 };
 export const getTimestamp = () => {
   return getNow().getTime();

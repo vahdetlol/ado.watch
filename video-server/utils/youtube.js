@@ -159,7 +159,7 @@ const downloadAllResolutions = async (url, outputDir) => {
         const uniqueId = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
         const outputTemplate = path.join(
           outputDir,
-          `${uniqueId}_${resolution}.%(ext)s`
+          `${uniqueId}-${resolution}.%(ext)s`
         );
 
         await youtubedl(url, {

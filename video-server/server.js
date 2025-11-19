@@ -20,8 +20,19 @@ mongoose
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
   })
-  .then(() => console.log("Connected to MongoDB (Video Server)"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+mongoose.connection.on("disconnected", () => {
+  console.error("MongoDB disconnected! Attempting to reconnect...");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("MongoDB error:", err);
+});
 
 const app = new Oweb();
 const server = await app.setup();
@@ -51,7 +62,7 @@ await server.register(fastifyStatic, {
 
 // Load routes
 await server.loadRoutes({
-  directory: "./routes",
+  directory: "routes",
   hmr: {
     enabled: process.env.NODE_ENV !== "production",
   },

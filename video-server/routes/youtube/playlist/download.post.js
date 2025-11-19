@@ -11,7 +11,6 @@ import {
   isPlaylistUrl,
   downloadAllResolutions,
 } from "../../../utils/youtube.js";
-import { authenticate, authorize } from "../../../middleware/auth.js";
 import { uploadAllResolutionsToB2 } from "../../../utils/backblaze.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -64,19 +63,17 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
 
 export default class extends Route {
   async handle(req, reply) {
-    await authenticate(req, reply);
-    if (reply.sent) return;
-
-    await authorize("admin", "moderator", "uploader")(req, reply);
-    if (reply.sent) return;
-
     try {
-      const { url, categories, tags } = req.body;
+      const { url, categories, tags, _user } = req.body;
 
       if (!url) {
         return reply
           .status(400)
           .send({ error: "YouTube Playlist URL is required" });
+      }
+
+      if (!_user || !_user._id) {
+        return reply.status(401).send({ error: "Authentication required" });
       }
 
       if (!isPlaylistUrl(url)) {
@@ -159,7 +156,7 @@ export default class extends Route {
             duration: Math.floor(downloadResult.duration || 0),
             categories: categories || [],
             tags: tags || [],
-            uploader: req.user._id,
+            uploader: _user._id,
           });
 
           await video.save();
@@ -183,7 +180,7 @@ export default class extends Route {
         }
       }
 
-      console.log("Youtube playlist downloaded by ", req.user.username);
+      console.log("Youtube playlist downloaded by ", _user.username);
 
       return reply.status(201).send({
         success: true,

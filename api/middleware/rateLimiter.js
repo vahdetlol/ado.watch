@@ -9,12 +9,20 @@ function cleanupExpiredEntries(store, windowMs) {
   }
 }
 
+let cleanupInterval;
+
 export function registerGlobalRateLimit(fastify) {
   const windowMs = 15 * 60 * 1000;
   const max = 100;
 
-  setInterval(() => cleanupExpiredEntries(rateLimitStore, windowMs), windowMs);
+  cleanupInterval = setInterval(
+    () => cleanupExpiredEntries(rateLimitStore, windowMs),
+    windowMs
+  );
 
+  fastify.addHook("onClose", () => {
+    if (cleanupInterval) clearInterval(cleanupInterval);
+  });
   fastify.addHook("onRequest", async (request, reply) => {
     const key = request.ip || request.socket?.remoteAddress || "unknown";
     const now = Date.now();

@@ -1,6 +1,5 @@
 import { Route } from 'owebjs';
 import Video from '../../models/Video.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,17 +8,11 @@ import { deleteFromB2 } from '../../utils/backblaze.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// DELETE /api/videos/:id - Delete video (Admin or Moderator)
+// DELETE /videos/:id - Delete video
 export default class extends Route {
   async handle(req, reply) {
-    // Manual middleware execution
-    await authenticate(req, reply);
-    if (reply.sent) return;
-    
-    await authorize('admin', 'moderator')(req, reply);
-    if (reply.sent) return;
-    
   try {
+    const { _user } = req.body;
     const video = await Video.findById(req.params.id);
     if (!video) {
       return reply.status(404).send({ 
@@ -53,7 +46,7 @@ export default class extends Route {
 
     // Delete from database
     await Video.findByIdAndDelete(req.params.id);
-    console.log(`Video ${req.params.id} deleted by user ${req.user.username}`);
+    console.log(`Video ${req.params.id} deleted by user ${_user?.username || 'unknown'}`);
     return reply.send({ 
       success: true,
       message: 'Video deleted successfully' 

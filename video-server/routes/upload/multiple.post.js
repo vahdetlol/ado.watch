@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import Video from '../../models/Video.js';
 import { extractThumbnail, getDuration, getVideoInfo, create720pVersion } from '../../utils/ffmpeg.js';
-import { authenticate } from '../../middleware/auth.js';
 import { uploadAllResolutionsToB2 } from '../../utils/backblaze.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,9 +47,6 @@ const upload = multer({
 
 export default class extends Route {
   async handle(req, reply) {
-    await authenticate(req, reply);
-    if (reply.sent) return;
-    
     return new Promise((resolve) => {
       upload.array('videos', 10)(req, reply, async (err) => {
         if (err) {
@@ -59,6 +55,15 @@ export default class extends Route {
         }
         
         try {
+          // Extract user information from headers
+          const userId = req.headers['x-user-id'];
+          const username = req.headers['x-user-username'];
+
+          if (!userId) {
+            reply.status(401).send({ error: 'Authentication required' });
+            return resolve();
+          }
+
           if (!req.files || req.files.length === 0) {
             reply.status(400).send({ error: 'No video files uploaded' });
             return resolve();
@@ -154,7 +159,7 @@ export default class extends Route {
                 duration: Math.floor(duration),
                 categories: categories ? JSON.parse(categories) : [],
                 tags: tags ? JSON.parse(tags) : [],
-                uploader: req.user._id,
+                uploader: userId,
               });
 
               await video.save();
@@ -166,7 +171,7 @@ export default class extends Route {
                 resolutionsCount: videoVersions.length
               });
 
-              console.log(`✓ Saved: ${video.title} (${videoVersions.length} resolution(s))`);
+              console.log(`Saved: ${video.title} (${videoVersions.length} resolution(s)) by ${username}`);
 
             } catch (error) {
               console.error(` Failed: ${file.originalname}`, error.message);

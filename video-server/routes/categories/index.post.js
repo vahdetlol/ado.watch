@@ -1,11 +1,8 @@
 import { Route } from 'owebjs';
 import Category from '../../models/category.js';
-import { authenticate, authorize } from '../../middleware/auth.js';
 
-// POST /api/categories - Create a new category (Admin only)
+// POST /categories - Create a new category
 export default class extends Route {
-  middleware = [authenticate, authorize('admin')];
-
   async handle(req, res) {
     try {
       const { name, slug } = req.body;

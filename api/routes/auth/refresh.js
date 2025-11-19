@@ -3,15 +3,15 @@ import jwt from 'jsonwebtoken';
 import { authenticate } from '../../middleware/auth.js';
 
 /**
- * POST /auth/refresh
+ * GET /auth/refresh
  * Refresh JWT token
  */
 export default class extends Route {
-  middleware = [authenticate];
-
   async handle(req, res) {
+    await authenticate(req, res);
+    if (res.sent) return;
+
     try {
-      // Generate new token
       const token = jwt.sign(
         { userId: req.user._id, level: req.user.level },
         process.env.JWT_SECRET,
