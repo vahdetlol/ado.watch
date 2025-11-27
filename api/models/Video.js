@@ -9,20 +9,21 @@ const videoSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     resolutions: [
       {
-        resolution: { type: String, required: true }, 
-        url: { type: String, required: true }, 
-        size: { type: Number, required: true }, 
+        resolution: { type: String, required: true },
+        url: { type: String, required: true },
+        size: { type: Number, required: true },
         width: { type: Number, required: true },
         height: { type: Number, required: true },
         isVertical: { type: Boolean, default: false },
       },
     ],
     mimeType: { type: String, default: "video/mp4" },
-    thumbnail: { type: String }, 
-    duration: { type: Number, default: 0 }, 
-    views: { type: Number, default: 0 }, 
-    categories: [{ type: String }], 
-    tags: [{ type: String }], 
+    thumbnail: { type: String },
+    duration: { type: Number, default: 0 },
+    views: { type: Number, default: 0 },
+    uploader: { type: String, ref: "User" },
+    categories: [{ type: String }],
+    tags: [{ type: String }],
   },
   {
     timestamps: {
@@ -30,5 +31,12 @@ const videoSchema = new mongoose.Schema(
     },
   }
 );
+
+videoSchema.index({ createdAt: -1 });
+videoSchema.index({ views: -1 });
+videoSchema.index({ uploader: 1 });
+videoSchema.index({ categories: 1 });
+videoSchema.index({ tags: 1 });
+videoSchema.index({ title: "text", description: "text" });
 
 export default mongoose.model("Video", videoSchema);

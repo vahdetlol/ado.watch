@@ -1,5 +1,8 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import { createLogger } from "../utils/logger.js";
+
+const logger = createLogger("AUTH");
 
 /**
  * Authentication middleware
@@ -8,73 +11,81 @@ import User from '../models/User.js';
 export const authenticate = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Auth failed: No token provided');
-      console.log(`   URL: ${req.method} ${req.url}`);
-      console.log(`   IP: ${req.ip || req.socket.remoteAddress}`);
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      logger.warn("Authentication failed: No token provided", {
+        url: `${req.method} ${req.url}`,
+        ip: req.ip || req.socket.remoteAddress,
+      });
       return res.status(401).send({
         success: false,
-        message: 'No token provided. Please login.'
+        message: "No token provided. Please login.",
       });
     }
 
-    const token = authHeader.split(' ')[1];
-    
+    const token = authHeader.split(" ")[1];
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     const user = await User.findById(decoded.userId);
-    
+
     if (!user) {
-      console.log('Auth failed: User not found');
-      console.log(`   User ID: ${decoded.userId}`);
-      console.log(`   URL: ${req.method} ${req.url}`);
+      logger.warn("Authentication failed: User not found", {
+        userId: decoded.userId,
+        url: `${req.method} ${req.url}`,
+      });
       return res.status(401).send({
         success: false,
-        message: 'User not found'
+        message: "User not found",
       });
     }
 
     if (!user.isActive) {
-      console.log('Auth failed: Account deactivated');
-      console.log(`   User: ${user.username} (${user.email})`);
-      console.log(`   URL: ${req.method} ${req.url}`);
+      logger.warn("Authentication failed: Account deactivated", {
+        username: user.username,
+        email: user.email,
+        url: `${req.method} ${req.url}`,
+      });
       return res.status(403).send({
         success: false,
-        message: 'Account is deactivated'
+        message: "Account is deactivated",
       });
     }
 
     req.user = user;
-    console.log(`User authenticated: ${user.username} [${user.level}]`);
-    
+    logger.debug("User authenticated", {
+      username: user.username,
+      level: user.level,
+    });
+
     return;
-    
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      console.log('Auth failed: Invalid token');
-      console.log(`   URL: ${req.method} ${req.url}`);
-      console.log(`   Error: ${error.message}`);
-      return res.status(401).send({
-        success: false,
-        message: 'Invalid token'
+    if (error.name === "JsonWebTokenError") {
+      logger.warn("Authentication failed: Invalid token", {
+        url: `${req.method} ${req.url}`,
+        error: error.message,
       });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      console.log('Auth failed: Token expired');
-      console.log(`   URL: ${req.method} ${req.url}`);
-      console.log(`   Expired at: ${error.expiredAt}`);
       return res.status(401).send({
         success: false,
-        message: 'Token expired'
+        message: "Invalid token",
       });
     }
 
+    if (error.name === "TokenExpiredError") {
+      logger.warn("Authentication failed: Token expired", {
+        url: `${req.method} ${req.url}`,
+        expiredAt: error.expiredAt,
+      });
+      return res.status(401).send({
+        success: false,
+        message: "Token expired",
+      });
+    }
+
+    logger.error("Authentication error", error);
     return res.status(500).send({
       success: false,
-      message: 'Authentication error',
-      error: error.message
+      message: "Authentication error",
     });
   }
 };
@@ -88,34 +99,40 @@ export const authorize = (...allowedLevels) => {
   return async (req, res) => {
     try {
       if (!req.user) {
-        console.log('Auth failed: User not authenticated');
-        console.log(`   URL: ${req.method} ${req.url}`);
+        logger.warn("Authorization failed: User not authenticated", {
+          url: `${req.method} ${req.url}`,
+        });
         return res.status(401).send({
           success: false,
-          message: 'Please log in first'
+          message: "Please log in first",
         });
       }
 
       if (!allowedLevels.includes(req.user.level)) {
-        console.log('Auth failed: Insufficient permissions');
-        console.log(`   User: ${req.user.username} [${req.user.level}]`);
-        console.log(`   Required: ${allowedLevels.join(' or ')}`);
-        console.log(`   URL: ${req.method} ${req.url}`);
+        logger.warn("Authorization failed: Insufficient permissions", {
+          username: req.user.username,
+          userLevel: req.user.level,
+          required: allowedLevels.join(" or "),
+          url: `${req.method} ${req.url}`,
+        });
         return res.status(403).send({
           success: false,
-          message: `Access denied. Required level: ${allowedLevels.join(' or ')}`
+          message: `Access denied. Required level: ${allowedLevels.join(
+            " or "
+          )}`,
         });
       }
 
-      console.log(`Auth granted: ${req.user.username} [${req.user.level}]`);
+      logger.debug("Authorization granted", {
+        username: req.user.username,
+        level: req.user.level,
+      });
       return;
-
     } catch (error) {
-      console.error('Auth error:', error);
+      logger.error("Authorization error", error);
       return res.status(500).send({
         success: false,
-        message: 'Authorization error',
-        error: error.message
+        message: "Authorization error",
       });
     }
   };
@@ -128,19 +145,18 @@ export const authorize = (...allowedLevels) => {
 export const optionalAuth = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.userId);
-      
+
       if (user && user.isActive) {
         req.user = user;
       }
     }
-    return;    
+    return;
   } catch (error) {
-    // Silently fail - this is optional auth
     return;
   }
 };

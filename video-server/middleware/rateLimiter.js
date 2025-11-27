@@ -1,11 +1,19 @@
+import { createLogger } from "../utils/logger.js";
+
+const logger = createLogger("RATE_LIMITER");
 const rateLimitStore = new Map();
 
 function cleanupExpiredEntries(store, windowMs) {
   const now = Date.now();
+  let deletedCount = 0;
   for (const [key, data] of store.entries()) {
     if (now - data.resetTime > windowMs) {
       store.delete(key);
+      deletedCount++;
     }
+  }
+  if (deletedCount > 0) {
+    logger.debug(`Cleaned up ${deletedCount} expired entries`);
   }
 }
 
@@ -17,11 +25,17 @@ export function registerGlobalRateLimit(fastify) {
 
   cleanupInterval = setInterval(
     () => cleanupExpiredEntries(rateLimitStore, windowMs),
-    windowMs
+    5 * 60 * 1000 // 5 dakika
   );
+  cleanupInterval.unref(); // Node.js'in kapanmasına engel olmaz
 
   fastify.addHook("onClose", () => {
-    if (cleanupInterval) clearInterval(cleanupInterval);
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
+      cleanupInterval = null;
+      rateLimitStore.clear();
+      logger.info("Rate limiter cleaned up");
+    }
   });
   fastify.addHook("onRequest", async (request, reply) => {
     const key = request.ip || request.socket?.remoteAddress || "unknown";
@@ -72,7 +86,11 @@ export function createRateLimiter(options = {}) {
   } = options;
 
   const store = new Map();
-  setInterval(() => cleanupExpiredEntries(store, windowMs), windowMs);
+  const cleanupInterval = setInterval(
+    () => cleanupExpiredEntries(store, windowMs),
+    Math.min(windowMs, 5 * 60 * 1000)
+  );
+  cleanupInterval.unref(); // Memory leak önleme
 
   return async (request, reply) => {
     const key = keyGenerator(request);

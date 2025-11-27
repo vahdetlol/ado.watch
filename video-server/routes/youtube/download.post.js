@@ -8,6 +8,12 @@ import { dirname } from "path";
 import Video from "../../models/Video.js";
 import { downloadAllResolutions, isYouTubeUrl } from "../../utils/youtube.js";
 import { uploadAllResolutionsToB2 } from "../../utils/backblaze.js";
+import {
+  sendProgress,
+  sendComplete,
+  sendError,
+  getProcessId,
+} from "../../utils/progressNotifier.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,32 +58,52 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
 
 export default class extends Route {
   async handle(req, reply) {
+    const pid = getProcessId(req);
+    let thumbPath = null;
+    const downloadedFiles = [];
+
     try {
       const { url, title, description, categories, tags, _user } = req.body;
 
       if (!url) {
-        return reply.status(400).send({ error: "YouTube URL is required" });
+        return reply.status(400).send({
+          success: false,
+          error: "YouTube URL is required",
+        });
       }
 
       if (!_user || !_user._id) {
-        return reply.status(401).send({ error: "Authentication required" });
+        return reply.status(401).send({
+          success: false,
+          error: "Authentication required",
+        });
       }
 
       if (!isYouTubeUrl(url)) {
-        return reply.status(400).send({ error: "Invalid YouTube URL" });
+        return reply.status(400).send({
+          success: false,
+          error: "Invalid YouTube URL",
+        });
       }
 
+      await sendProgress(pid, 10, "starting");
       console.log(`Downloading all resolutions: ${url}`);
-      const downloadResult = await downloadAllResolutions(url, videoDir);
+
+      const downloadResult = await downloadAllResolutions(url, videoDir, pid);
 
       if (!downloadResult.success) {
-        return reply.status(500).send({ error: "Download failed" });
+        await sendError(pid, new Error("Download failed"));
+        return reply.status(500).send({
+          success: false,
+          error: "Download failed",
+        });
       }
 
+      await sendProgress(pid, 52, "processing_thumbnail");
       const thumbFilename = `${Date.now()}-${Math.round(
         Math.random() * 1e9
       )}.jpg`;
-      const thumbPath = path.join(thumbDir, thumbFilename);
+      thumbPath = path.join(thumbDir, thumbFilename);
 
       try {
         if (downloadResult.thumbnail) {
@@ -86,23 +112,33 @@ export default class extends Route {
         }
       } catch (thumbError) {
         console.warn("Thumbnail download failed:", thumbError.message);
+        thumbPath = null; // Reset eğer başarısız olduysa
       }
 
       const successfulVideos = downloadResult.videos.filter((v) => v.success);
 
+      // Track downloaded files for cleanup
+      successfulVideos.forEach((v) => {
+        if (v.filename) downloadedFiles.push(v.filename);
+      });
+
       if (successfulVideos.length === 0) {
-        return reply
-          .status(500)
-          .send({ error: "No videos downloaded successfully" });
+        await sendError(pid, new Error("No videos downloaded successfully"));
+        return reply.status(500).send({
+          success: false,
+          error: "No videos downloaded successfully",
+        });
       }
 
+      await sendProgress(pid, 55, "uploading");
       console.log("Uploading all resolutions to Backblaze B2...");
       const b2Results = await uploadAllResolutionsToB2(
         successfulVideos,
-        fs.existsSync(thumbPath) ? thumbPath : null
+        thumbPath && fs.existsSync(thumbPath) ? thumbPath : null,
+        pid
       );
 
-
+      await sendProgress(pid, 95, "saving");
       const video = new Video({
         title: title || downloadResult.title,
         description: description || downloadResult.description || "",
@@ -129,7 +165,7 @@ export default class extends Route {
       );
       console.log("Youtube video downloaded by ", _user.username);
 
-      return reply.status(201).send({
+      const result = {
         success: true,
         video: {
           id: video._id,
@@ -142,10 +178,36 @@ export default class extends Route {
             size: r.size,
           })),
         },
-      });
+      };
+
+      await sendComplete(pid, result);
+      return reply.status(201).send(result);
     } catch (error) {
       console.error("YouTube download error:", error);
+      await sendError(pid, error);
+
+      // Cleanup temp files on error
+      downloadedFiles.forEach((file) => {
+        try {
+          if (fs.existsSync(file)) {
+            fs.unlinkSync(file);
+            console.log(`Cleaned up temp file: ${file}`);
+          }
+        } catch (cleanupError) {
+          console.warn(`Failed to cleanup ${file}:`, cleanupError.message);
+        }
+      });
+
+      if (thumbPath && fs.existsSync(thumbPath)) {
+        try {
+          fs.unlinkSync(thumbPath);
+        } catch (cleanupError) {
+          console.warn(`Failed to cleanup thumbnail:`, cleanupError.message);
+        }
+      }
+
       return reply.status(500).send({
+        success: false,
         error: "YouTube download failed",
         message: error.message,
       });

@@ -12,6 +12,12 @@ import {
   downloadAllResolutions,
 } from "../../../utils/youtube.js";
 import { uploadAllResolutionsToB2 } from "../../../utils/backblaze.js";
+import {
+  sendProgress,
+  sendComplete,
+  sendError,
+  getProcessId,
+} from "../../../utils/progressNotifier.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,25 +69,30 @@ const downloadThumbnail = (thumbnailUrl, outputPath) => {
 
 export default class extends Route {
   async handle(req, reply) {
+    const pid = getProcessId(req);
     try {
       const { url, categories, tags, _user } = req.body;
 
       if (!url) {
+        await sendError(pid, new Error("YouTube Playlist URL is required"));
         return reply
           .status(400)
           .send({ error: "YouTube Playlist URL is required" });
       }
 
       if (!_user || !_user._id) {
+        await sendError(pid, new Error("Authentication required"));
         return reply.status(401).send({ error: "Authentication required" });
       }
 
       if (!isPlaylistUrl(url)) {
+        await sendError(pid, new Error("Invalid YouTube Playlist URL"));
         return reply
           .status(400)
           .send({ error: "Invalid YouTube Playlist URL" });
       }
 
+      await sendProgress(pid, 5, "fetching_playlist_info");
       console.log(`Fetching playlist info: ${url}`);
 
       const playlistInfo = await getPlaylistInfo(url);
@@ -94,6 +105,13 @@ export default class extends Route {
 
       for (let i = 0; i < playlistInfo.videos.length; i++) {
         const videoInfo = playlistInfo.videos[i];
+        const currentProgress = 10 + (i / playlistInfo.videoCount) * 80;
+
+        await sendProgress(
+          pid,
+          currentProgress,
+          `downloading_${i + 1}_of_${playlistInfo.videoCount}`
+        );
         console.log(
           `\n[${i + 1}/${
             playlistInfo.videoCount
@@ -182,7 +200,7 @@ export default class extends Route {
 
       console.log("Youtube playlist downloaded by ", _user.username);
 
-      return reply.status(201).send({
+      const result = {
         success: true,
         message: `${savedVideos.length} videos saved successfully`,
         playlistTitle: playlistInfo.title,
@@ -191,9 +209,12 @@ export default class extends Route {
         total: playlistInfo.videoCount,
         successful: savedVideos.length,
         failed: failedVideos.length,
-      });
+      };
+      await sendComplete(pid, result);
+      return reply.status(201).send(result);
     } catch (error) {
       console.error("Playlist download error:", error);
+      await sendError(pid, error);
       return reply.status(500).send({
         error: "Playlist download failed",
         message: error.message,

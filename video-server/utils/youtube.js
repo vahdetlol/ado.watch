@@ -1,6 +1,10 @@
 import youtubedl from "@openanime/youtube-dl-exec";
 import path from "path";
 import fs from "fs";
+import { sendProgress } from "./progressNotifier.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger("YOUTUBE");
 
 const downloadFromYouTube = async (
   url,
@@ -13,7 +17,7 @@ const downloadFromYouTube = async (
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    console.log(`Output directory: ${outputDir}`);
+    logger.debug(`Output directory: ${outputDir}`);
 
     const info = await youtubedl(url, {
       dumpSingleJson: true,
@@ -23,15 +27,15 @@ const downloadFromYouTube = async (
       noPlaylist: !isPlaylist,
     });
 
-    console.log(`Video title: ${info.title}`);
-    console.log(`Duration: ${info.duration}s`);
+    logger.info(`Video title: ${info.title}`);
+    logger.debug(`Duration: ${info.duration}s`);
 
     const existingFiles = fs.readdirSync(outputDir);
 
     const uniqueId = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const outputTemplate = path.join(outputDir, `${uniqueId}.%(ext)s`);
 
-    console.log(`Downloading with format: ${format}...`);
+    logger.info(`Downloading with format: ${format}...`);
     await youtubedl(url, {
       output: outputTemplate,
       format: format,
@@ -40,12 +44,12 @@ const downloadFromYouTube = async (
       noPlaylist: !isPlaylist,
     });
 
-    console.log(` Searching for downloaded file...`);
+    logger.debug("Searching for downloaded file...");
 
     const currentFiles = fs.readdirSync(outputDir);
     const newFiles = currentFiles.filter((f) => !existingFiles.includes(f));
 
-    console.log(`New files found:`, newFiles);
+    logger.debug(`New files found:`, newFiles);
 
     if (newFiles.length === 0) {
       const matchingFiles = currentFiles.filter((f) =>
@@ -64,8 +68,8 @@ const downloadFromYouTube = async (
     const outputPath = path.join(outputDir, downloadedFile);
 
     const stats = fs.statSync(outputPath);
-    console.log(`Downloaded: ${downloadedFile}`);
-    console.log(`File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+    logger.info(`Downloaded: ${downloadedFile}`);
+    logger.debug(`File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
     return {
       success: true,
@@ -79,18 +83,18 @@ const downloadFromYouTube = async (
       mimeType: "video/mp4",
     };
   } catch (error) {
-    console.error("YouTube download error:", error);
+    logger.error("YouTube download error:", error);
     throw new Error(`YouTube download failed: ${error.message}`);
   }
 };
 
-const downloadAllResolutions = async (url, outputDir) => {
+const downloadAllResolutions = async (url, outputDir, pid = null) => {
   try {
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    console.log(`Fetching available formats for video...`);
+    logger.info("Fetching available formats for video...");
 
     const info = await youtubedl(url, {
       dumpSingleJson: true,
@@ -99,7 +103,7 @@ const downloadAllResolutions = async (url, outputDir) => {
       noPlaylist: true,
     });
 
-    console.log(`Video: ${info.title}`);
+    logger.info(`Video: ${info.title}`);
 
     const videoFormats = info.formats
       .filter(
@@ -133,28 +137,50 @@ const downloadAllResolutions = async (url, outputDir) => {
 
     uniqueResolutions.sort((a, b) => b.resolutionValue - a.resolutionValue);
 
-    console.log(`Found ${uniqueResolutions.length} unique resolutions:`);
+    logger.info(`Found ${uniqueResolutions.length} unique resolutions:`);
     uniqueResolutions.forEach((f) => {
       const orientation = f.isVertical ? "vertical" : "horizontal";
-      console.log(
+      logger.debug(
         `  - ${f.resolutionName} (${f.width}x${f.height}, ${orientation}) - ${(
-          (f.filesize || 0) / 1024 / 1024
+          (f.filesize || 0) /
+          1024 /
+          1024
         ).toFixed(2)} MB`
       );
     });
 
     const downloadedVideos = [];
+    const resolutionProgress = {};
 
     for (let i = 0; i < uniqueResolutions.length; i++) {
       const format = uniqueResolutions[i];
       const resolution = format.resolutionName;
-      console.log(
-        `\n[${i + 1}/${uniqueResolutions.length}] Downloading ${resolution} (${
+      logger.info(
+        `[${i + 1}/${uniqueResolutions.length}] Downloading ${resolution} (${
           format.width
         }x${format.height})...`
       );
+      const baseProgress = 10;
+      const downloadSpacePerResolution = 40 / uniqueResolutions.length;
+      const currentOverallProgress =
+        baseProgress + i * downloadSpacePerResolution;
 
       try {
+        resolutionProgress[resolution] = 0;
+        if (pid) {
+          await sendProgress(
+            pid,
+            Math.round(currentOverallProgress),
+            `downloading_${resolution}`,
+            {
+              resolutions: resolutionProgress,
+              currentResolution: resolution,
+              totalResolutions: uniqueResolutions.length,
+              completedResolutions: i,
+            }
+          );
+        }
+
         const existingFiles = fs.readdirSync(outputDir);
         const uniqueId = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
         const outputTemplate = path.join(
@@ -200,9 +226,23 @@ const downloadAllResolutions = async (url, outputDir) => {
             size: stats.size,
             mimeType: "video/mp4",
           });
+          resolutionProgress[resolution] = 100;
+          if (pid) {
+            await sendProgress(
+              pid,
+              Math.round(currentOverallProgress + downloadSpacePerResolution),
+              `completed_${resolution}`,
+              {
+                resolutions: resolutionProgress,
+                currentResolution: resolution,
+                totalResolutions: uniqueResolutions.length,
+                completedResolutions: i + 1,
+              }
+            );
+          }
 
-          console.log(
-            `✓ Downloaded ${resolution}: ${(stats.size / 1024 / 1024).toFixed(
+          logger.info(
+            `Downloaded ${resolution}: ${(stats.size / 1024 / 1024).toFixed(
               2
             )} MB`
           );
@@ -210,7 +250,8 @@ const downloadAllResolutions = async (url, outputDir) => {
           throw new Error(`File not found for ${resolution}`);
         }
       } catch (error) {
-        console.error(`✗ Error downloading ${resolution}:`, error.message);
+        logger.error(`Error downloading ${resolution}:`, error.message);
+        resolutionProgress[resolution] = -1;
         downloadedVideos.push({
           error: true,
           resolution: resolution,
@@ -230,7 +271,7 @@ const downloadAllResolutions = async (url, outputDir) => {
       videos: downloadedVideos,
     };
   } catch (error) {
-    console.error("Error fetching video formats:", error);
+    logger.error("Error fetching video formats:", error);
     throw new Error(`Failed to download all resolutions: ${error.message}`);
   }
 };
@@ -298,7 +339,7 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
     }
 
     const playlistInfo = await getPlaylistInfo(playlistUrl);
-    console.log(
+    logger.info(
       `Playlist: ${playlistInfo.title} (${playlistInfo.videoCount} video)`
     );
 
@@ -306,10 +347,8 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
 
     for (let i = 0; i < playlistInfo.videos.length; i++) {
       const videoInfo = playlistInfo.videos[i];
-      console.log(
-        `\n[${i + 1}/${playlistInfo.videoCount}] Downloading: ${
-          videoInfo.title
-        }`
+      logger.info(
+        `[${i + 1}/${playlistInfo.videoCount}] Downloading: ${videoInfo.title}`
       );
 
       try {
@@ -323,9 +362,9 @@ const downloadPlaylist = async (playlistUrl, outputDir) => {
           playlistIndex: i + 1,
           playlistTitle: playlistInfo.title,
         });
-        console.log(`Completed: ${videoInfo.title}`);
+        logger.info(`Completed: ${videoInfo.title}`);
       } catch (error) {
-        console.error(`Error (${videoInfo.title}):`, error.message);
+        logger.error(`Error (${videoInfo.title}):`, error.message);
         downloadedVideos.push({
           error: true,
           title: videoInfo.title,

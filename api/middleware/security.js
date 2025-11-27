@@ -1,4 +1,7 @@
 import fastifyHelmet from "@fastify/helmet";
+import { createLogger } from "../utils/logger.js";
+
+const logger = createLogger("SECURITY");
 
 /**
  * Security middleware configuration
@@ -10,45 +13,57 @@ export async function registerSecurityMiddleware(app) {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Inline styles için gerekli
         imgSrc: ["'self'", "data:", "https:"],
         fontSrc: ["'self'", "data:"],
         mediaSrc: ["'self'", "blob:", "https:"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", "ws:", "wss:"], // WebSocket için
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+        upgradeInsecureRequests:
+          process.env.NODE_ENV === "production" ? [] : null,
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
     hsts: {
-      maxAge: 31536000,
+      maxAge: 31536000, // 1 yıl
       includeSubDomains: true,
       preload: true,
     },
     frameguard: {
-      action: "sameorigin",
+      action: "deny", // Clickjacking koruması
     },
+    noSniff: true, // MIME type sniffing koruması
     referrerPolicy: {
       policy: "strict-origin-when-cross-origin",
     },
+    xssFilter: true,
   });
 
   // MongoDB injection prevention
   app.addHook("preValidation", async (request, reply) => {
-    const sanitizeObject = (obj) => {
-      if (!obj || typeof obj !== "object") return obj;
+    const MAX_DEPTH = 10; // Stack overflow koruması
+
+    const sanitizeObject = (obj, depth = 0) => {
+      if (!obj || typeof obj !== "object" || depth > MAX_DEPTH) return obj;
 
       const sanitized = Array.isArray(obj) ? [] : {};
 
       for (const key in obj) {
         // Remove keys starting with $ or containing .
         if (key.startsWith("$") || key.includes(".")) {
+          logger.warn("Potentially malicious input detected", { key });
           continue;
         }
 
         const value = obj[key];
 
         if (value && typeof value === "object") {
-          sanitized[key] = sanitizeObject(value);
+          sanitized[key] = sanitizeObject(value, depth + 1);
         } else {
           sanitized[key] = value;
         }
@@ -84,5 +99,5 @@ export async function registerSecurityMiddleware(app) {
     }
   });
 
-  console.log("Security middleware registered");
+  logger.info("Security middleware registered");
 }

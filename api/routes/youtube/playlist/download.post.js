@@ -1,36 +1,50 @@
-import { Route } from 'owebjs';
-import { authenticate, authorize } from '../../../middleware/auth.js';
-import { proxyToVideoServer, sendProxiedResponse } from '../../../utils/videoServerProxy.js';
+import { Route } from "owebjs";
+import { authenticate, authorize } from "../../../middleware/auth.js";
+import {
+  proxyToVideoServerWithProgress,
+  sendProxiedResponse,
+} from "../../../utils/videoServerProxy.js";
+import { generateProcessId } from "../../../utils/snowflake.js";
 
-// POST /youtube/playlist/download - Proxy to video-server for YouTube playlist download
 export default class extends Route {
   async handle(req, reply) {
     await authenticate(req, reply);
     if (reply.sent) return;
 
-    await authorize('admin', 'moderator', 'uploader')(req, reply);
+    await authorize("admin", "moderator", "uploader")(req, reply);
     if (reply.sent) return;
 
     try {
-      const response = await proxyToVideoServer('/youtube/playlist/download', {
-        method: 'POST',
-        body: {
-          ...req.body,
-          _user: {
-            _id: req.user._id,
-            username: req.user.username,
+      const pid = generateProcessId();
+
+      reply.status(202).send({
+        success: true,
+        pid: pid,
+        message: "Playlist download started. Track progress via WebSocket.",
+      });
+      proxyToVideoServerWithProgress(
+        "/youtube/playlist/download",
+        {
+          method: "POST",
+          body: {
+            ...req.body,
+            _user: {
+              _id: req.user._id,
+              username: req.user.username,
+            },
           },
         },
+        req.user._id.toString(),
+        pid
+      ).catch((error) => {
+        console.error("Background playlist download error:", error);
       });
-
-      await sendProxiedResponse(reply, response);
-      
     } catch (error) {
-      console.error('YouTube playlist download proxy error:', error);
+      console.error("YouTube playlist download proxy error:", error);
       return reply.status(500).send({
         success: false,
-        message: 'Failed to connect to video server',
-        error: error.message
+        message: "Failed to connect to video server",
+        error: error.message,
       });
     }
   }

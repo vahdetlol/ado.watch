@@ -21,17 +21,25 @@ const VideoSchema = new mongoose.Schema(
     mimeType: { type: String, default: "video/mp4" },
     thumbnail: { type: String, default: null },
     duration: { type: Number, default: 0 },
+    views: { type: Number, default: 0 },
+    uploader: { type: String, ref: "User", required: true },
     categories: [{ type: String, ref: "Category" }],
     tags: [{ type: String, ref: "Tag" }],
-    uploader: [{ type: String, ref: "User", required: true }],
-    views: { type: Number, default: 0 },
     createdAt: { type: Date, default: getNow },
   },
-    {
-      timestamps: {
-        currentTime: () => getNow(),
-      },
-    }
+  {
+    timestamps: {
+      currentTime: () => getNow(),
+    },
+  }
 );
+
+// Indexes for better query performance
+VideoSchema.index({ createdAt: -1 });
+VideoSchema.index({ views: -1 });
+VideoSchema.index({ uploader: 1 });
+VideoSchema.index({ categories: 1 });
+VideoSchema.index({ tags: 1 });
+VideoSchema.index({ title: "text", description: "text" });
 
 export default mongoose.model("Video", VideoSchema);

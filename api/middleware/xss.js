@@ -3,6 +3,10 @@
  * Sanitizes user input to prevent XSS attacks
  */
 
+import { createLogger } from "../utils/logger.js";
+
+const logger = createLogger("XSS");
+
 const DANGEROUS_PATTERNS = [
   /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
   /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
@@ -16,13 +20,13 @@ const DANGEROUS_PATTERNS = [
  * Sanitize a string value
  */
 function sanitizeString(value) {
-  if (typeof value !== 'string') return value;
-  
+  if (typeof value !== "string") return value;
+
   let sanitized = value;
-  DANGEROUS_PATTERNS.forEach(pattern => {
-    sanitized = sanitized.replace(pattern, '');
+  DANGEROUS_PATTERNS.forEach((pattern) => {
+    sanitized = sanitized.replace(pattern, "");
   });
-  
+
   return sanitized;
 }
 
@@ -31,16 +35,16 @@ function sanitizeString(value) {
  */
 function sanitizeObject(obj) {
   if (obj === null || obj === undefined) return obj;
-  
-  if (typeof obj === 'string') {
+
+  if (typeof obj === "string") {
     return sanitizeString(obj);
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item));
+    return obj.map((item) => sanitizeObject(item));
   }
-  
-  if (typeof obj === 'object') {
+
+  if (typeof obj === "object") {
     const sanitized = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
@@ -49,7 +53,7 @@ function sanitizeObject(obj) {
     }
     return sanitized;
   }
-  
+
   return obj;
 }
 
@@ -57,22 +61,22 @@ function sanitizeObject(obj) {
  * XSS Protection Hook
  */
 export function registerXSSProtection(app) {
-  app.addHook('preValidation', async (request, reply) => {
+  app.addHook("preValidation", async (request, reply) => {
     // Sanitize request body
     if (request.body) {
       request.body = sanitizeObject(request.body);
     }
-    
+
     // Sanitize query parameters
     if (request.query) {
       request.query = sanitizeObject(request.query);
     }
-    
+
     // Sanitize URL parameters
     if (request.params) {
       request.params = sanitizeObject(request.params);
     }
   });
-  
-  console.log(' XSS Protection middleware registered');
+
+  logger.info("XSS Protection middleware registered");
 }

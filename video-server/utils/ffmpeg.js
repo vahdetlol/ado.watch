@@ -68,13 +68,8 @@ export const create720pVersion = (inputPath, outputPath) => {
         const videoStream = metadata.streams.find(
           (s) => s.codec_type === "video"
         );
-        const duration = metadata.format.duration;
         const height = videoStream?.height || 0;
-        const audioBitrate = 128; // kbps
-        const targetSizeMB = 256;
-        const targetTotalBitrate = Math.floor((targetSizeMB * 8192) / duration);
-        const targetVideoBitrate = targetTotalBitrate - audioBitrate;
-
+        const targetBitrate = 5000;
         if (height <= 720) {
           console.log(
             "Original video is 720p or lower, skipping 720p creation."
@@ -90,14 +85,14 @@ export const create720pVersion = (inputPath, outputPath) => {
 
           ffmpeg(inputPath)
             .videoCodec("libx264")
-            .videoBitrate(targetVideoBitrate)
+            .videoBitrate(targetBitrate)
             .size("?x720")
             .audioCodec("aac")
-            .audioBitrate(audioBitrate)
             .addOutputOption("-preset medium")
             .addOutputOption("-movflags +faststart")
-            .addOutputOption(`-maxrate ${targetVideoBitrate}k`)
-            .addOutputOption(`-bufsize ${targetVideoBitrate * 2}k`)
+            .addOutputOption(`-bufsize ${targetBitrate * 2}k`)
+            .addOutputOption("-profile:v main")
+            .addOutputOption("-pix_fmt yuv420p")
             .output(outputPath)
             .on("start", (commandLine) => {
               console.log("FFmpeg 720p command:", commandLine);
